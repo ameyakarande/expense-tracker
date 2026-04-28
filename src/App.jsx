@@ -82,7 +82,12 @@ function App() {
   const [selectedType, setSelectedType] = useState('personal')
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [selectedGroupId, setSelectedGroupId] = useState('')
-  const [authMode, setAuthMode] = useState('signin')
+  const [authMode, setAuthMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('et_visited') ? 'signin' : 'signup'
+    }
+    return 'signin'
+  })
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' })
   const [expenseForm, setExpenseForm] = useState(emptyExpenseForm(new Date().toISOString().slice(0, 10), ''))
   const [contributionForm, setContributionForm] = useState(emptyContributionForm(getCurrentMonth(), ''))
@@ -405,6 +410,7 @@ function App() {
       }
 
       setNotice('Signed in successfully.')
+      localStorage.setItem('et_visited', 'true')
       return
     }
 
@@ -422,6 +428,7 @@ function App() {
     }
 
     setNotice('Account created. If email confirmation is enabled, verify your inbox before signing in.')
+    localStorage.setItem('et_visited', 'true')
   }
 
   const saveCategory = async (name) => {
