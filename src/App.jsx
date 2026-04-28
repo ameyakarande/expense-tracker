@@ -1066,16 +1066,13 @@ function App() {
           <Field label="Invite code">
               <input
                 required
-                maxLength={inviteCodeLength}
-                minLength={inviteCodeLength}
                 inputMode="text"
                 autoCapitalize="characters"
                 autoComplete="off"
-                pattern="[A-Z0-9]{10}"
                 value={groupForm.inviteCode}
                 onChange={(event) => setGroupForm({ ...groupForm, inviteCode: normalizeInviteCode(event.target.value) })}
                 className="w-full rounded-2xl bg-canvas px-4 py-3 uppercase outline-none"
-                placeholder="A1B2C3D4E5"
+                placeholder="ABC-123-XYZ"
               />
             </Field>
           <button
