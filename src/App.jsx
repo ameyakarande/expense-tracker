@@ -1110,80 +1110,117 @@ function LoadingScreen({ label, compact = false }) {
 }
 
 function AuthScreen({ authForm, authMode, setAuthForm, setAuthMode, onSubmit, errorMessage, notice }) {
+  const isSignIn = authMode === 'signin'
+
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[32px] bg-[#0F172A] p-8 text-white shadow-panel">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
-            <Sparkles size={14} />
-            Personal + Group Tracking
-          </p>
-          <h1 className="max-w-md text-4xl font-extrabold leading-tight tracking-tight">
-            A shared money space that still respects personal boundaries.
-          </h1>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <FeatureCard icon={ArrowDownCircle} title="Contributions in" copy="Track monthly inflows for yourself or the whole group." />
-            <FeatureCard icon={Receipt} title="Expenses out" copy="Every expense stays tied to its selected date and month." />
-            <FeatureCard icon={Users} title="Context aware" copy="Switch between private and shared ledgers without losing the thread." />
+    <div className="flex min-h-screen items-center justify-center bg-canvas p-4 sm:p-6 lg:p-10">
+      <div className="grid w-full max-w-6xl overflow-hidden rounded-[40px] bg-white shadow-2xl lg:grid-cols-2">
+        {/* Hero Section */}
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-black p-12 text-white lg:flex">
+          <div className="relative z-10">
+            <h1 className="text-5xl font-bold leading-tight tracking-tight">
+              Take control of your <br />
+              <span className="text-zinc-400">shared expenses.</span>
+            </h1>
+            <p className="mt-6 max-w-sm text-lg text-zinc-400">
+              Personal tracking and group ledgers, all in one place. Simple, fast, and synced.
+            </p>
+          </div>
+          
+          {/* Abstract Glow Effect */}
+          <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-[#f06b02] opacity-20 blur-[100px]" />
+          <div className="absolute bottom-0 right-0 h-64 w-full bg-gradient-to-t from-[#f06b02]/30 to-transparent" />
+          
+          <div className="relative z-10 flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-[#f06b02]" />
+            <span className="font-bold tracking-tight">Expense Tracker</span>
           </div>
         </section>
 
-        <section className="rounded-[32px] bg-white p-8 shadow-panel">
-          <div className="mb-6 flex rounded-full bg-canvas p-1">
-            <button
-              type="button"
-              onClick={() => setAuthMode('signin')}
-              className={`flex-1 rounded-full px-4 py-3 text-sm font-semibold ${authMode === 'signin' ? 'bg-ink text-white' : 'text-zinc-500'}`}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode('signup')}
-              className={`flex-1 rounded-full px-4 py-3 text-sm font-semibold ${authMode === 'signup' ? 'bg-ink text-white' : 'text-zinc-500'}`}
-            >
-              Create account
-            </button>
+        {/* Form Section */}
+        <section className="flex flex-col justify-center p-8 sm:p-16 lg:p-20">
+          <div className="mb-10 flex h-12 w-12 items-center justify-center rounded-xl bg-[#f06b02]/10 text-[#f06b02]">
+             <Sparkles size={24} />
           </div>
 
-          <form className="space-y-4" onSubmit={onSubmit}>
-            {authMode === 'signup' ? (
-              <Field label="Name">
+          <header className="mb-10">
+            <h2 className="text-4xl font-extrabold tracking-tight text-ink">
+              {isSignIn ? 'Welcome Back' : 'Get Started'}
+            </h2>
+            <p className="mt-2 text-zinc-500">
+              {isSignIn ? 'Sign in to your account' : 'Welcome to Expense Tracker — Let\'s get started'}
+            </p>
+          </header>
+
+          <form className="space-y-6" onSubmit={onSubmit}>
+            {!isSignIn && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-zinc-600">Your name</label>
                 <input
                   required
                   value={authForm.name}
                   onChange={(event) => setAuthForm({ ...authForm, name: event.target.value })}
-                  className="w-full rounded-2xl bg-canvas px-4 py-3 outline-none"
-                  placeholder="Your name"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 outline-none transition focus:border-[#f06b02] focus:ring-2 focus:ring-[#f06b02]/10"
+                  placeholder="Enter your name"
                 />
-              </Field>
-            ) : null}
-            <Field label="Email">
+              </div>
+            )}
+            
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-zinc-600">Your email</label>
               <input
                 required
                 type="email"
                 value={authForm.email}
                 onChange={(event) => setAuthForm({ ...authForm, email: event.target.value })}
-                className="w-full rounded-2xl bg-canvas px-4 py-3 outline-none"
-                placeholder="you@example.com"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 outline-none transition focus:border-[#f06b02] focus:ring-2 focus:ring-[#f06b02]/10"
+                placeholder="hi@example.com"
               />
-            </Field>
-            <Field label="Password">
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-zinc-600">
+                {isSignIn ? 'Your password' : 'Create new password'}
+              </label>
               <input
                 required
                 type="password"
                 value={authForm.password}
                 onChange={(event) => setAuthForm({ ...authForm, password: event.target.value })}
-                className="w-full rounded-2xl bg-canvas px-4 py-3 outline-none"
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 outline-none transition focus:border-[#f06b02] focus:ring-2 focus:ring-[#f06b02]/10"
                 placeholder="••••••••"
               />
-            </Field>
-            {errorMessage ? <p className="text-sm font-medium text-danger">{errorMessage}</p> : null}
-            {notice ? <p className="text-sm font-medium text-positive">{notice}</p> : null}
-            <button className="w-full rounded-2xl bg-ink px-4 py-3 font-semibold text-white transition hover:-translate-y-0.5">
-              {authMode === 'signin' ? 'Sign in' : 'Create account'}
+            </div>
+
+            {errorMessage && (
+              <div className="rounded-xl bg-red-50 p-3 text-sm font-medium text-danger">
+                {errorMessage}
+              </div>
+            )}
+            
+            {notice && (
+              <div className="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-positive">
+                {notice}
+              </div>
+            )}
+
+            <button className="w-full rounded-xl bg-[#f06b02] px-4 py-4 font-bold text-white shadow-lg shadow-[#f06b02]/20 transition hover:-translate-y-0.5 hover:bg-[#d96102] active:translate-y-0">
+              {isSignIn ? 'Sign in' : 'Create new account'}
             </button>
           </form>
+
+          <footer className="mt-10 text-center">
+            <p className="text-sm text-zinc-500">
+              {isSignIn ? "Don't have an account?" : "Already have an account?"}{' '}
+              <button
+                type="button"
+                onClick={() => setAuthMode(isSignIn ? 'signup' : 'signin')}
+                className="font-bold text-ink hover:underline"
+              >
+                {isSignIn ? 'Create one' : 'Login'}
+              </button>
+            </p>
+          </footer>
         </section>
       </div>
     </div>
