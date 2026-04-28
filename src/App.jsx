@@ -715,6 +715,26 @@ function App() {
     }
   }
 
+  const onPromoteMember = async (targetUserId) => {
+    if (!supabase || pendingAction || selectedType !== 'group' || !selectedGroupId) return
+    setPendingAction('promote')
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .update({ role: 'admin' })
+        .eq('group_id', selectedGroupId)
+        .eq('user_id', targetUserId)
+      
+      if (error) throw error
+      setNotice("Member promoted to admin.")
+      await loadAppData(currentUserId)
+    } catch (err) {
+      setErrorMessage(err.message)
+    } finally {
+      setPendingAction('')
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return <SetupScreen />
   }
@@ -1468,7 +1488,6 @@ function ProfileScreen({
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-600">Active</span>
                   ) : null}
                 </div>
-              </div>
             ))}
             {groups.length === 0 ? <EmptyCard copy="Create your first shared group or join one with an invite code." /> : null}
           </div>
