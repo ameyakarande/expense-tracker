@@ -1113,10 +1113,10 @@ function AuthScreen({ authForm, authMode, setAuthForm, setAuthMode, onSubmit, er
   const isSignIn = authMode === 'signin'
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-canvas p-4 sm:p-6 lg:p-10">
-      <div className="grid w-full max-w-6xl overflow-hidden rounded-[40px] bg-white shadow-2xl lg:grid-cols-2">
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="grid min-h-screen w-full overflow-hidden lg:grid-cols-2">
         {/* Hero Section */}
-        <section className="relative hidden flex-col justify-between overflow-hidden bg-black p-12 text-white lg:flex">
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-black p-16 text-white lg:flex xl:p-24">
           <div className="relative z-10">
             <h1 className="text-5xl font-bold leading-tight tracking-tight">
               Take control of your <br />
@@ -1138,8 +1138,9 @@ function AuthScreen({ authForm, authMode, setAuthForm, setAuthMode, onSubmit, er
         </section>
 
         {/* Form Section */}
-        <section className="flex flex-col justify-center p-8 sm:p-16 lg:p-20">
-          <div className="mb-10 flex h-12 w-12 items-center justify-center rounded-xl bg-[#f06b02]/10 text-[#f06b02]">
+        <section className="flex flex-col items-center justify-center p-8 sm:p-16 lg:p-20">
+          <div className="w-full max-w-md">
+            <div className="mb-10 flex h-12 w-12 items-center justify-center rounded-xl bg-[#f06b02]/10 text-[#f06b02]">
              <Sparkles size={24} />
           </div>
 
@@ -1221,6 +1222,7 @@ function AuthScreen({ authForm, authMode, setAuthForm, setAuthMode, onSubmit, er
               </button>
             </p>
           </footer>
+          </div>
         </section>
       </div>
     </div>
