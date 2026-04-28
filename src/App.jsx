@@ -63,7 +63,7 @@ const emptyContributionForm = (month, userId) => ({
 })
 
 const normalizeText = (value, maxLength) => value.trim().replace(/\s+/g, ' ').slice(0, maxLength)
-const normalizeInviteCode = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, inviteCodeLength)
+const normalizeInviteCode = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '')
 const parsePositiveAmount = (value) => {
   const amount = Number.parseFloat(value)
   return Number.isFinite(amount) && amount > 0 ? amount : null
@@ -560,8 +560,8 @@ function App() {
     if (!supabase || pendingAction) return
 
     const lookupCode = normalizeInviteCode(groupForm.inviteCode)
-    if (lookupCode.length !== inviteCodeLength) {
-      setErrorMessage(`Invite codes must be ${inviteCodeLength} letters or numbers.`)
+    if (lookupCode.length < 4) {
+      setErrorMessage("Invite codes are usually around 10 characters. Please check yours.")
       return
     }
 
