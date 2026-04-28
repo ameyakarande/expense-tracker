@@ -228,7 +228,7 @@ function App() {
 
     const groupsPromise = supabase
       .from('group_members')
-      .select('group_id, groups!inner(id, name, invite_code, created_by)')
+      .select('group_id, role, groups!inner(id, name, invite_code, created_by)')
       .eq('user_id', userId)
 
     const categoriesPromise = supabase.from('categories').select('id, name').order('name')
@@ -249,7 +249,7 @@ function App() {
       return
     }
 
-    const nextGroups = (groupsResult.data || []).map((entry) => entry.groups)
+    const nextGroups = (groupsResult.data || []).map((entry) => ({ ...entry.groups, role: entry.role }))
     const profileData = profileResult.data
     if (profileData?.currency && profileData.currency !== currency) {
       setCurrency(profileData.currency)
@@ -347,7 +347,7 @@ function App() {
     setStore({
       profile: profileResult.data,
       groups: nextGroups,
-      members: (membersResult.data || []).map((item) => item.users),
+      members: (membersResult.data || []).map((item) => ({ ...item.users, role: item.role })),
       expenses: expensesResult.data || [],
       contributions: contributionsResult.data || [],
       trendExpenses: trendExpensesResult.data || [],
@@ -672,6 +672,13 @@ function App() {
     if (!supabase || pendingAction) return
 
     const isGroup = selectedType === 'group'
+    const activeGroupEntry = store.groups.find(g => g.id === selectedGroupId)
+    
+    if (isGroup && activeGroupEntry?.role !== 'admin') {
+      setErrorMessage("Only group admins can clear the ledger.")
+      return
+    }
+
     const contextName = isGroup ? `group "${activeGroup?.name}"` : 'personal ledger'
     const confirmed = window.confirm(
       `Are you sure you want to clear all data for your ${contextName}? This will permanently delete all expenses and contributions in this context. This action cannot be undone.`
@@ -824,6 +831,9 @@ function App() {
                     utilization={utilization}
                     categoryBreakdown={categoryBreakdown}
                     formatMoney={formatMoney}
+                    members={store.members}
+                    contributions={store.contributions}
+                    selectedType={selectedType}
                   />
                 ) : null}
 
@@ -855,6 +865,7 @@ function App() {
                     formatMoney={formatMoney}
                     pendingAction={pendingAction}
                     onClearData={onClearData}
+                    onPromoteMember={onPromoteMember}
                   />
                 ) : null}
               </div>
@@ -1191,13 +1202,13 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <StatCard label="Contributions" value={formatMoney(totals.contributions)} tone="positive" icon={ArrowDownCircle} />
           <StatCard label="Expenses" value={formatMoney(totals.expenses)} tone="danger" icon={ArrowUpCircle} />
           <StatCard label="Balance" value={formatMoney(totals.balance)} tone={totals.balance >= 0 ? 'positive' : 'danger'} icon={Wallet} />
         </div>
 
-        <div className="mt-6 hidden gap-3 md:flex">
+        <div className="mt-6 flex flex-wrap gap-3 md:flex">
           <ActionButton icon={Plus} label="Add Expense" onClick={onAddExpense} />
           <ActionButton icon={CircleDollarSign} label="Add Contribution" onClick={onAddContribution} tone="light" />
         </div>
@@ -1236,23 +1247,63 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
   )
 }
 
-function BudgetsScreen({ totals, utilization, categoryBreakdown, formatMoney }) {
+function BudgetsScreen({ totals, utilization, categoryBreakdown, formatMoney, members, contributions, selectedType }) {
+  const isGroup = selectedType === 'group'
+  const settlementInfo = useMemo(() => {
+    if (!isGroup || members.length === 0) return null
+    const sharePerPerson = totals.expenses / members.length
+    return members.map(member => {
+      const actualCont = contributions
+        .filter(c => c.user_id === member.id)
+        .reduce((sum, c) => sum + Number(c.amount || 0), 0)
+      const diff = actualCont - sharePerPerson
+      return { ...member, actualCont, sharePerPerson, diff }
+    }).sort((a, b) => a.diff - b.diff)
+  }, [isGroup, members, contributions, totals.expenses])
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-      <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
-        <p className="text-sm font-medium text-zinc-500">Monthly runway</p>
-        <h2 className="money mt-3 text-4xl font-extrabold tracking-tight">{formatMoney(totals.balance)}</h2>
-        <div className="mt-6 rounded-full bg-canvas p-1">
-          <div
-            className={`h-3 rounded-full ${utilization > 85 ? 'bg-danger' : 'bg-positive'} animate-pulsebar`}
-            style={{ width: `${Math.max(utilization, 8)}%` }}
-          />
-        </div>
-        <div className="mt-3 flex items-center justify-between text-sm text-zinc-500">
-          <span className="money">{utilization.toFixed(0)}% spent</span>
-          <span className="money">{formatMoney(totals.contributions)} funded</span>
-        </div>
-      </section>
+    <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
+        <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
+          <p className="text-sm font-medium text-zinc-500">Monthly runway</p>
+          <h2 className="money mt-3 text-4xl font-extrabold tracking-tight">{formatMoney(totals.balance)}</h2>
+          <div className="mt-6 rounded-full bg-canvas p-1">
+            <div
+              className={`h-3 rounded-full ${utilization > 85 ? 'bg-danger' : 'bg-positive'} animate-pulsebar`}
+              style={{ width: `${Math.max(utilization, 8)}%` }}
+            />
+          </div>
+          <div className="mt-3 flex items-center justify-between text-sm text-zinc-500">
+            <span className="money">{utilization.toFixed(0)}% spent</span>
+            <span className="money">{formatMoney(totals.contributions)} funded</span>
+          </div>
+        </section>
+
+        {settlementInfo && (
+          <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
+            <div className="mb-4">
+              <p className="text-sm font-medium text-zinc-500">Fair share insights</p>
+              <h3 className="text-xl font-bold">Who needs to top up?</h3>
+              <p className="mt-1 text-sm text-zinc-500">Target per person: {formatMoney(settlementInfo[0]?.sharePerPerson)}</p>
+            </div>
+            <div className="space-y-3">
+              {settlementInfo.map(item => (
+                <div key={item.id} className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold">{item.name || item.email}</p>
+                    <p className="text-xs text-zinc-500">Contributed: {formatMoney(item.actualCont)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-bold ${item.diff < 0 ? 'text-danger' : 'text-positive'}`}>
+                      {item.diff < 0 ? `Owes ${formatMoney(Math.abs(item.diff))}` : `Ahead ${formatMoney(item.diff)}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
 
       <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
         <div className="mb-5 flex items-center justify-between">
@@ -1358,9 +1409,13 @@ function ProfileScreen({
   formatMoney,
   pendingAction,
   onClearData,
+  onPromoteMember,
 }) {
+  const currentGroupRole = groups.find(g => g.id === activeGroup?.id)?.role
+  const isAdmin = selectedType === 'personal' || currentGroupRole === 'admin'
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+    <div className="grid gap-4 lg:grid-cols-1 xl:grid-cols-[0.95fr_1.05fr]">
       <section className="space-y-4">
         <div className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
           <p className="text-sm font-medium text-zinc-500">Account</p>
@@ -1404,9 +1459,10 @@ function ProfileScreen({
             {groups.map((group) => (
               <div key={group.id} className="rounded-[22px] bg-canvas px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
                     <p className="font-semibold">{group.name}</p>
-                    <p className="text-xs text-zinc-500">Invite code: {group.invite_code}</p>
+                    <p className="text-xs text-zinc-500">
+                      {group.role === 'admin' ? `Invite code: ${group.invite_code}` : 'Invite members via admin'}
+                    </p>
                   </div>
                   {activeGroup?.id === group.id && selectedType === 'group' ? (
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-600">Active</span>
@@ -1416,7 +1472,7 @@ function ProfileScreen({
             ))}
             {groups.length === 0 ? <EmptyCard copy="Create your first shared group or join one with an invite code." /> : null}
           </div>
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <ActionButton icon={Plus} label="Create group" onClick={onCreateGroup} />
             <ActionButton icon={Users} label="Join group" onClick={onJoinGroup} tone="light" />
           </div>
@@ -1450,7 +1506,7 @@ function ProfileScreen({
               />
             </Field>
           </div>
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <ActionButton
               icon={Download}
               label={pendingAction === 'export-csv' ? 'Preparing CSV...' : 'Download CSV'}
@@ -1494,35 +1550,56 @@ function ProfileScreen({
         {selectedType === 'group' ? (
           <div className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
             <p className="text-sm font-medium text-zinc-500">Members</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 space-y-2">
               {members.map((member) => (
-                <span key={member.id} className="rounded-full bg-canvas px-4 py-2 text-sm font-medium text-zinc-600">
-                  {member.name || member.email}
-                </span>
+                <div key={member.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-canvas px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-zinc-600">
+                      {member.name || member.email}
+                    </span>
+                    {member.role === 'admin' && <span className="text-[10px] font-bold uppercase tracking-wider text-brand">Admin</span>}
+                  </div>
+                  {isAdmin && member.role !== 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => onPromoteMember(member.id)}
+                      className="text-xs font-bold text-brand hover:underline"
+                    >
+                      Make Admin
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
         ) : null}
 
-        <div className="surface rounded-[28px] border border-red-100 bg-red-50/30 p-5 shadow-panel sm:p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-danger">Danger Zone</p>
-              <h3 className="text-xl font-bold">Reset ledger</h3>
+        {isAdmin ? (
+          <div className="surface rounded-[28px] border border-red-100 bg-red-50/30 p-5 shadow-panel sm:p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-danger">Danger Zone</p>
+                <h3 className="text-xl font-bold">Reset ledger</h3>
+              </div>
             </div>
+            <p className="text-sm text-zinc-600">
+              Permanently delete all expenses and contributions from your {selectedType === 'personal' ? 'personal ledger' : `group "${activeGroup?.name}"`}.
+            </p>
+            <button
+              type="button"
+              disabled={pendingAction === 'clear-data'}
+              onClick={() => onClearData()}
+              className="mt-4 rounded-2xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
+            >
+              {pendingAction === 'clear-data' ? 'Clearing...' : 'Clear all data'}
+            </button>
           </div>
-          <p className="text-sm text-zinc-600">
-            Permanently delete all expenses and contributions from your {selectedType === 'personal' ? 'personal ledger' : `group "${activeGroup?.name}"`}.
-          </p>
-          <button
-            type="button"
-            disabled={pendingAction === 'clear-data'}
-            onClick={() => onClearData()}
-            className="mt-4 rounded-2xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-600 disabled:opacity-50"
-          >
-            {pendingAction === 'clear-data' ? 'Clearing...' : 'Clear all data'}
-          </button>
-        </div>
+        ) : (
+          <div className="surface rounded-[28px] bg-canvas/50 p-5 shadow-panel sm:p-6">
+             <p className="text-sm font-medium text-zinc-500">Permissions</p>
+             <p className="mt-1 text-sm text-zinc-500">You are a member of this group. Only admins can reset data or see invite codes.</p>
+          </div>
+        )}
       </section>
     </div>
   )
