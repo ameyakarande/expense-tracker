@@ -1109,8 +1109,6 @@ function App() {
                     activeGroup={activeGroup}
                     totals={totals}
                     recentTransactions={recentTransactions}
-                    onAddExpense={() => setOpenSheet('expense')}
-                    onAddContribution={() => setOpenSheet('contribution')}
                     formatMoney={formatMoney}
                     onEditTransaction={onEditTransaction}
                     onDeleteTransaction={onDeleteTransaction}
@@ -1738,8 +1736,6 @@ function OverviewScreen({
   activeGroup,
   totals,
   recentTransactions,
-  onAddExpense,
-  onAddContribution,
   formatMoney,
   onEditTransaction,
   onDeleteTransaction,
@@ -1768,12 +1764,6 @@ function OverviewScreen({
               icon={TrendingDown}
               tone="danger"
             />
-          </div>
-          <div className="mt-6 flex flex-col gap-3">
-            <ActionButton icon={Plus} label="Add expense" onClick={onAddExpense} />
-            {selectedType === 'group' && (
-              <ActionButton icon={CircleDollarSign} label="Add contribution" onClick={onAddContribution} tone="light" />
-            )}
           </div>
         </div>
 
