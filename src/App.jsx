@@ -465,7 +465,13 @@ function App() {
       // Load initial chat
       supabase
         .from('group_chats')
-        .select('*, users:user_id(name, email)')
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id,
+          users:user_id(name, email)
+        `)
         .eq('group_id', selectedGroupId)
         .order('created_at', { ascending: true })
         .then(({ data, error }) => {
