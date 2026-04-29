@@ -1423,7 +1423,7 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
   const isGroup = selectedType === 'group'
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <section className="surface sticky top-[180px] rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
+      <section className="surface lg:sticky lg:top-[180px] rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-zinc-500">{selectedType === 'personal' ? 'Personal ledger' : activeGroup?.name || 'Group ledger'}</p>
