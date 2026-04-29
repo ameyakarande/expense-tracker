@@ -12,6 +12,7 @@ import {
   CircleDollarSign,
   CreditCard,
   Download,
+  LayoutGrid,
   LoaderCircle,
   LogOut,
   MessageSquare,
