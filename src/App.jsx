@@ -133,7 +133,12 @@ function App() {
   const [loadingSession, setLoadingSession] = useState(isSupabaseConfigured)
   const [appLoading, startTransition] = useTransition()
   const [errorMessage, setErrorMessage] = useState('')
-  const [hasGreeted, setHasGreeted] = useState(false)
+  const [hasGreeted, setHasGreeted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('trackit_has_greeted') === 'true'
+    }
+    return false
+  })
   const [chatMessages, setChatMessages] = useState([])
   const [onlineUsers, setOnlineUsers] = useState([])
   const [hasUnreadChat, setHasUnreadChat] = useState(false)
@@ -1037,6 +1042,32 @@ function App() {
     }
   }
 
+  const onExitGroup = async (groupId) => {
+    if (!supabase || pendingAction) return
+    const confirmed = window.confirm('Are you sure you want to leave this group?')
+    if (!confirmed) return
+    setPendingAction('exit-group')
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', currentUserId)
+      
+      if (error) throw error
+      setNotice("You have left the group.")
+      if (selectedGroupId === groupId) {
+        setSelectedType('personal')
+        setSelectedGroupId('')
+      }
+      await loadAppData(currentUserId)
+    } catch (err) {
+      setErrorMessage(err.message)
+    } finally {
+      setPendingAction('')
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return <SetupScreen />
   }
@@ -1142,6 +1173,7 @@ function App() {
             onChoose={(type) => {
               setSelectedType(type)
               setHasGreeted(true)
+              sessionStorage.setItem('trackit_has_greeted', 'true')
             }} 
             onSignOut={signOut}
           />
@@ -1215,6 +1247,7 @@ function App() {
                     pendingAction={pendingAction}
                     onClearData={onClearData}
                     onPromoteMember={onPromoteMember}
+                    onExitGroup={onExitGroup}
                   />
                 ) : null}
               </div>
@@ -2080,6 +2113,7 @@ function ProfileScreen({
   pendingAction,
   onClearData,
   onPromoteMember,
+  onExitGroup,
 }) {
   const currentGroupRole = groups.find(g => g.id === activeGroup?.id)?.role
   const isAdmin = selectedType === 'personal' || currentGroupRole === 'admin'
@@ -2135,10 +2169,20 @@ function ProfileScreen({
                         {group.memberCount}
                       </span>
                     </div>
+                    <div className="flex items-center gap-3">
                     <p className="text-xs text-zinc-500">
                       {group.role === 'admin' ? `Invite code: ${group.invite_code}` : 'Invite members via admin'}
                     </p>
+                    <button 
+                      type="button" 
+                      onClick={() => onExitGroup(group.id)} 
+                      disabled={pendingAction === 'exit-group'}
+                      className="rounded bg-red-50 px-2 py-1 text-xs font-semibold text-danger transition hover:bg-red-100 disabled:opacity-50"
+                    >
+                      Exit
+                    </button>
                   </div>
+                </div>
                   {activeGroup?.id === group.id && selectedType === 'group' ? (
                     <div className="mt-2 flex items-center gap-2">
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-600 shadow-sm">Currently Active</span>
