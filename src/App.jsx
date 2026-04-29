@@ -575,13 +575,32 @@ function App() {
 
     setPendingAction('join')
     try {
-      const { data, error } = await supabase.rpc('join_group_by_code', { lookup_code: lookupCode })
+      const { data, error } = await supabase.from('groups').select('id').eq('invite_code', lookupCode).single()
       if (error) {
-        setErrorMessage(error.message)
+        setErrorMessage("Invalid invite code. Please check and try again.")
         return
       }
+      
+      const { error: joinError } = await supabase.from('group_members').upsert({ 
+        group_id: data.id, 
+        user_id: currentUserId,
+        role: 'member'
+      })
+      
+      if (joinError) {
+        setErrorMessage(joinError.message)
+        return
+      }
+
+      // Proactively ensure public profile exists after joining
+      await supabase.from('users').upsert({
+        id: currentUserId,
+        email: session.user.email,
+        name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+      }, { onConflict: 'id' })
+
       setSelectedType('group')
-      setSelectedGroupId(data)
+      setSelectedGroupId(data.id)
       closeSheet()
       await loadAppData(currentUserId)
     } finally {
@@ -1713,7 +1732,7 @@ function ProfileScreen({
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-zinc-800">
-                        {member.name || member.email || 'Group Member'}
+                        {member.name || member.email || `Member ${member.id?.slice(0, 5)}`}
                         {member.id === profile?.id && <span className="ml-2 text-[10px] font-normal text-zinc-400">(You)</span>}
                       </p>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
