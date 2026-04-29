@@ -16,17 +16,13 @@ import {
   PieChart,
   Pencil,
   Plus,
-  PlusCircle,
   Receipt,
-  Search,
   ShieldCheck,
   Sparkles,
   Trash2,
-  UserPlus,
   UserRound,
   Users,
   Wallet,
-  HelpCircle,
 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import {
@@ -946,17 +942,6 @@ function App() {
               setSelectedType(type)
               setHasGreeted(true)
             }} 
-            onCreateGroup={() => {
-              setSelectedType('group')
-              setHasGreeted(true)
-              setOpenSheet('create-group')
-            }}
-            onJoinGroup={() => {
-              setSelectedType('group')
-              setHasGreeted(true)
-              setOpenSheet('join-group')
-            }}
-            onSignOut={signOut}
           />
         ) : (
           <>
@@ -1216,84 +1201,53 @@ function App() {
   )
 }
 
-function WelcomeScreen({ name, onChoose, onCreateGroup, onJoinGroup, onSignOut }) {
+function WelcomeScreen({ name, onChoose }) {
   const hour = new Date().getHours()
-  const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="flex flex-1 flex-col py-6 view-enter">
-      <div className="mx-auto w-full max-w-md space-y-12">
-        <header className="flex items-center justify-between">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">
-            <HelpCircle size={20} />
+    <div className="flex flex-1 flex-col items-center justify-center py-10 view-enter">
+      <div className="w-full max-w-md space-y-10">
+        <header className="space-y-2">
+          <h2 className="text-4xl font-extrabold tracking-tight text-ink">{greeting}!</h2>
+          <p className="text-xl text-zinc-400">
+            {name ? `${name.split(' ')[0]}, what` : 'What'} would you like to track today?
+          </p>
+          <div className="inline-block rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+            {timeStr}
           </div>
-          <button 
-            onClick={onSignOut}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition hover:bg-red-50 hover:text-danger"
-          >
-            <LogOut size={20} />
-          </button>
         </header>
 
-        <section className="space-y-1">
-          <h2 className="text-4xl font-medium text-zinc-400">Hi {name ? name.split(' ')[0] : 'there'},</h2>
-          <h3 className="text-4xl font-bold leading-tight text-ink">
-            How would you like to track today?
-          </h3>
-        </section>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <button
+            onClick={() => onChoose('personal')}
+            className="group flex flex-col items-start rounded-[32px] bg-white p-6 shadow-soft transition-all hover:-translate-y-1 hover:shadow-panel text-left"
+          >
+            <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-50 text-ink transition-colors group-hover:bg-ink group-hover:text-white">
+              <UserRound size={24} />
+            </div>
+            <h3 className="text-lg font-bold">Personal</h3>
+            <p className="mt-1 text-sm text-zinc-400 leading-relaxed">
+              Manage your own daily spending and budgets.
+            </p>
+          </button>
 
-        <div className="grid grid-cols-2 gap-4">
-          <WelcomeCard 
-            icon={UserRound} 
-            title="Personal" 
-            copy="Your own spending..." 
-            onClick={() => onChoose('personal')} 
-          />
-          <WelcomeCard 
-            icon={Users} 
-            title="Group" 
-            copy="Shared expenses..." 
-            onClick={() => onChoose('group')} 
-          />
-          <WelcomeCard 
-            icon={PlusCircle} 
-            title="New" 
-            copy="Create a group..." 
-            onClick={onCreateGroup} 
-          />
-          <WelcomeCard 
-            icon={UserPlus} 
-            title="Join" 
-            copy="Enter invite code..." 
-            onClick={onJoinGroup} 
-          />
-        </div>
-
-        <div className="relative">
-          <div className="flex items-center gap-3 rounded-[20px] bg-zinc-100 px-4 py-4 text-zinc-400">
-            <Search size={18} />
-            <span className="text-sm font-medium">Search transactions...</span>
-          </div>
+          <button
+            onClick={() => onChoose('group')}
+            className="group flex flex-col items-start rounded-[32px] bg-white p-6 shadow-soft transition-all hover:-translate-y-1 hover:shadow-panel text-left"
+          >
+            <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-50 text-ink transition-colors group-hover:bg-ink group-hover:text-white">
+              <Users size={24} />
+            </div>
+            <h3 className="text-lg font-bold">Group</h3>
+            <p className="mt-1 text-sm text-zinc-400 leading-relaxed">
+              Track shared expenses with friends or family.
+            </p>
+          </button>
         </div>
       </div>
     </div>
-  )
-}
-
-function WelcomeCard({ icon: Icon, title, copy, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex flex-col items-start rounded-[28px] bg-white p-5 shadow-soft transition-all hover:shadow-panel text-left active:scale-[0.98]"
-    >
-      <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-50 text-zinc-400 transition-colors group-hover:bg-ink group-hover:text-white">
-        <Icon size={20} />
-      </div>
-      <h4 className="text-lg font-bold text-ink">{title}</h4>
-      <p className="mt-1 text-[11px] font-medium text-zinc-400 leading-tight">
-        {copy}
-      </p>
-    </button>
   )
 }
 
