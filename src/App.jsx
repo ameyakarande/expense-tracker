@@ -1067,11 +1067,13 @@ function App() {
               {selectedType === 'personal' ? (
                 <option value={currentUserId}>{store.profile?.name || session.user.email}</option>
               ) : (
-                store.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name || member.email}
-                  </option>
-                ))
+                store.members
+                  .filter(m => currentGroupRole === 'admin' || m.id === currentUserId)
+                  .map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name || member.email}
+                    </option>
+                  ))
               )}
             </select>
           </Field>
@@ -1119,11 +1121,13 @@ function App() {
               {selectedType === 'personal' ? (
                 <option value={currentUserId}>{store.profile?.name || session.user.email}</option>
               ) : (
-                store.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name || member.email}
-                  </option>
-                ))
+                store.members
+                  .filter(m => currentGroupRole === 'admin' || m.id === currentUserId)
+                  .map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name || member.email}
+                    </option>
+                  ))
               )}
             </select>
           </Field>
