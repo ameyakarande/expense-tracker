@@ -1473,41 +1473,49 @@ function BudgetsScreen({ totals, utilization, categoryBreakdown, formatMoney, me
         {settlementInfo && (
           <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
             <div className="mb-6">
-              <p className="text-sm font-medium text-zinc-500">Fair share insights</p>
-              <h3 className="text-xl font-bold">Contribution status</h3>
+              <p className="text-sm font-medium text-zinc-500">{totals.balance >= 0 ? 'Funding Parity' : 'Debt Settlement'}</p>
+              <h3 className="text-xl font-bold">
+                {totals.balance >= 0 ? 'Who needs to top up?' : 'Who is owed money?'}
+              </h3>
               <p className="mt-1 text-sm text-zinc-500">
-                Everyone's fair share of expenses is <span className="font-bold text-ink">{formatMoney(settlementInfo[0]?.sharePerPerson)}</span>
+                {totals.balance >= 0 
+                  ? `Goal: Everyone contributes ${formatMoney(Math.max(...settlementInfo.map(s => s.actualCont)))}`
+                  : `The group is overspent by ${formatMoney(Math.abs(totals.balance))}`
+                }
               </p>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {settlementInfo.map(item => {
-                const percentage = Math.min((item.actualCont / (item.sharePerPerson || 1)) * 100, 100)
-                const isSettled = item.diff >= 0
+                const maxCont = Math.max(...settlementInfo.map(s => s.actualCont))
+                const topUpNeeded = maxCont - item.actualCont
+                const isOverspent = totals.balance < 0
+                
+                // For settlement mode (negative balance), we calculate who is "ahead" of the fair share of expenses
+                const shareOfExpenses = totals.expenses / (members.length || 1)
+                const outOfPocket = item.actualCont // Simplified: treating contributions as out-of-pocket for this logic
+                const debtStatus = outOfPocket - shareOfExpenses
+
                 return (
-                  <div key={item.id} className="group">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-ink">{item.name || item.email}</p>
-                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">
-                          Paid {formatMoney(item.actualCont)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-bold ${isSettled ? 'text-positive' : 'text-danger'}`}>
-                          {isSettled ? 'Settled' : `Owes ${formatMoney(Math.abs(item.diff))}`}
-                        </p>
-                        {isSettled && item.diff > 0 && (
-                          <p className="text-[10px] font-bold text-positive/70 uppercase tracking-wider">
-                            +{formatMoney(item.diff)} Extra
-                          </p>
-                        )}
-                      </div>
+                  <div key={item.id} className="flex items-center justify-between rounded-2xl bg-canvas px-5 py-4 transition-all hover:bg-zinc-50">
+                    <div>
+                      <p className="text-sm font-bold text-ink">{item.name || item.email}</p>
+                      <p className="text-xs text-zinc-500">
+                        {isOverspent 
+                          ? `Total Paid: ${formatMoney(item.actualCont)}`
+                          : `Contributed: ${formatMoney(item.actualCont)}`
+                        }
+                      </p>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${isSettled ? 'bg-positive' : 'bg-danger'}`}
-                        style={{ width: `${Math.max(percentage, 5)}%` }}
-                      />
+                    <div className="text-right">
+                      {!isOverspent ? (
+                        <p className={`text-sm font-bold ${topUpNeeded > 0 ? 'text-zinc-500' : 'text-positive'}`}>
+                          {topUpNeeded > 0 ? `Top up ${formatMoney(topUpNeeded)}` : 'Full Share'}
+                        </p>
+                      ) : (
+                        <p className={`text-sm font-bold ${debtStatus >= 0 ? 'text-positive' : 'text-danger'}`}>
+                          {debtStatus >= 0 ? `Owed ${formatMoney(debtStatus)}` : `Owes ${formatMoney(Math.abs(debtStatus))}`}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )
