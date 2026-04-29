@@ -1387,13 +1387,13 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {recentTransactions.length === 0 ? (
             <EmptyCard copy="No transactions yet for this month. Add a contribution or expense to start the ledger." />
           ) : (
             recentTransactions.map((item) => (
-              <div key={`${item.entryType}-${item.id}`} className="group flex items-center justify-between rounded-[22px] bg-canvas px-4 py-3">
-                <div>
+              <div key={`${item.entryType}-${item.id}`} className="group flex items-center justify-between rounded-[22px] bg-canvas px-5 py-5 transition-all hover:bg-zinc-50">
+                <div className="flex flex-col gap-1">
                   <p className="font-semibold text-ink">
                     {item.entryType === 'expense' ? item.title : (item.users?.name || item.users?.email || 'Unknown Contributor')}
                   </p>
