@@ -80,6 +80,7 @@ function App() {
   const [appLoading, startTransition] = useTransition()
   const [errorMessage, setErrorMessage] = useState('')
   const [hasGreeted, setHasGreeted] = useState(false)
+  const [onlineUsers, setOnlineUsers] = useState([])
   const [notice, setNotice] = useState('')
   const [activeView, setActiveView] = useState('overview')
   const [selectedType, setSelectedType] = useState('personal')
@@ -411,6 +412,29 @@ function App() {
     startTransition(() => {
       loadAppDataEvent(session.user.id)
     })
+
+    // Realtime Presence for "Who's Online"
+    if (selectedType === 'group' && selectedGroupId) {
+      const channel = supabase.channel(`group_presence_${selectedGroupId}`, {
+        config: { presence: { key: session.user.id } }
+      })
+
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const state = channel.presenceState()
+          setOnlineUsers(Object.keys(state))
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.track({ online_at: new Date().toISOString() })
+          }
+        })
+
+      return () => {
+        channel.unsubscribe()
+        setOnlineUsers([])
+      }
+    }
   }, [selectedGroupId, selectedMonth, selectedType, session?.user])
 
   const closeSheet = () => {
@@ -995,6 +1019,7 @@ function App() {
                     activeGroup={activeGroup}
                     groups={store.groups}
                     members={store.members}
+                    onlineUsers={onlineUsers}
                     contributions={store.contributions}
                     exportRange={exportRange}
                     setExportRange={setExportRange}
@@ -1714,6 +1739,7 @@ function ProfileScreen({
   activeGroup,
   groups,
   members,
+  onlineUsers,
   contributions,
   exportRange,
   setExportRange,
@@ -1876,14 +1902,24 @@ function ProfileScreen({
               {members.map((member) => (
                 <div key={member.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-canvas px-4 py-2">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${member.role === 'admin' ? 'bg-brand/10 text-brand' : 'bg-zinc-200 text-zinc-500'}`}>
-                      {member.name?.[0]?.toUpperCase() || 'M'}
+                    <div className="relative">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${member.role === 'admin' ? 'bg-brand/10 text-brand' : 'bg-zinc-200 text-zinc-500'}`}>
+                        {member.name?.[0]?.toUpperCase() || 'M'}
+                      </div>
+                      {onlineUsers.includes(member.id) && (
+                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-canvas bg-emerald-500 shadow-sm" title="Online" />
+                      )}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-zinc-800">
-                        {member.name || member.email || `Member ${member.id?.slice(0, 5)}`}
-                        {member.id === profile?.id && <span className="ml-2 text-[10px] font-normal text-zinc-400">(You)</span>}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-zinc-800">
+                          {member.name || member.email || `Member ${member.id?.slice(0, 5)}`}
+                          {member.id === profile?.id && <span className="ml-2 text-[10px] font-normal text-zinc-400">(You)</span>}
+                        </p>
+                        {onlineUsers.includes(member.id) && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-500">Live</span>
+                        )}
+                      </div>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                         {member.role || 'Member'}
                       </p>
