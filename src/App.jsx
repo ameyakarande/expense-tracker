@@ -1143,10 +1143,12 @@ function App() {
               selectedType={selectedType}
             />
 
-            <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-3 md:hidden">
-              <FloatingButton label="Add expense" icon={Plus} onClick={() => setOpenSheet('expense')} />
-              <FloatingButton label="Add contribution" icon={CircleDollarSign} onClick={() => setOpenSheet('contribution')} tone="light" />
-            </div>
+            {activeView !== 'chat' && (
+              <div className="fixed bottom-28 right-4 z-20 flex flex-col gap-3 md:hidden">
+                <FloatingButton label="Add expense" icon={Plus} onClick={() => setOpenSheet('expense')} />
+                <FloatingButton label="Add contribution" icon={CircleDollarSign} onClick={() => setOpenSheet('contribution')} tone="light" />
+              </div>
+            )}
           </>
         )}
       </div>
