@@ -16,13 +16,17 @@ import {
   PieChart,
   Pencil,
   Plus,
+  PlusCircle,
   Receipt,
+  Search,
   ShieldCheck,
   Sparkles,
   Trash2,
+  UserPlus,
   UserRound,
   Users,
   Wallet,
+  HelpCircle,
 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import {
