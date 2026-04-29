@@ -83,14 +83,14 @@ function StatSlider({ cards }) {
   const [index, setIndex] = useState(0)
 
   return (
-    <div className="relative w-full overflow-hidden px-4">
+    <div className="relative w-full overflow-hidden">
       <motion.div
         drag="x"
-        dragConstraints={{ left: -300, right: 0 }}
+        dragConstraints={{ left: -(cards.length - 1) * 100, right: 0 }}
         dragElastic={0.2}
         onDragEnd={(_, info) => {
-          if (info.offset.x < -50 && index < cards.length - 1) setIndex(index + 1)
-          if (info.offset.x > 50 && index > 0) setIndex(index - 1)
+          if (info.offset.x < -30 && index < cards.length - 1) setIndex(index + 1)
+          if (info.offset.x > 30 && index > 0) setIndex(index - 1)
         }}
         animate={{ x: `-${index * 100}%` }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -99,15 +99,17 @@ function StatSlider({ cards }) {
         {cards.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.id} className="min-w-full px-2">
-              <div className="flex h-44 w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-canvas ${card.tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
-                    <Icon size={20} />
+            <div key={card.id} className="min-w-full px-4">
+              <div className="flex h-40 w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft border border-zinc-50">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-canvas ${card.tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
+                    <Icon size={18} />
                   </div>
-                  <p className="text-sm font-semibold text-zinc-500">{card.title}</p>
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{card.title}</p>
                 </div>
-                <p className="text-4xl font-extrabold tracking-tight text-ink">{card.value}</p>
+                <p className="text-3xl font-extrabold tracking-tight text-ink truncate">
+                  {card.value}
+                </p>
               </div>
             </div>
           )
@@ -1014,7 +1016,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-transparent text-ink">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-28 pt-4 sm:px-6 lg:px-10">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-3 pb-32 pt-4 sm:px-6 lg:px-10">
         {(hasGreeted || activeView !== 'overview') && (
           <header className="glass sticky top-4 z-20 mb-5 rounded-[24px] border border-white/60 px-4 py-4 shadow-panel">
             <div className="flex flex-col gap-4">
@@ -1187,8 +1189,7 @@ function App() {
             />
 
             <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-3 md:hidden">
-              <FloatingButton label="Add expense" icon={Plus} onClick={() => setOpenSheet('expense')} />
-              <FloatingButton label="Add contribution" icon={CircleDollarSign} onClick={() => setOpenSheet('contribution')} tone="light" />
+              <FloatingButton label="+" icon={Plus} onClick={() => setOpenSheet('expense')} />
             </div>
           </>
         )}
