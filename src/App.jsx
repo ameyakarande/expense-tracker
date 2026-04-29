@@ -1754,7 +1754,7 @@ function OverviewScreen({
             />
             <StatCard
               label="Total Contributions"
-              value={formatMoney(totals.income)}
+              value={formatMoney(totals.contributions)}
               icon={CircleDollarSign}
               tone="positive"
             />
