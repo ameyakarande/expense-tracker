@@ -79,48 +79,43 @@ const isValidDateString = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value)
 const isValidMonthString = (value) => /^\d{4}-\d{2}$/.test(value)
 const getDaySpan = (start, end) => Math.ceil((new Date(`${end}T00:00:00`) - new Date(`${start}T00:00:00`)) / 86400000)
 
-function SwipeableStack({ cards }) {
+function StatSlider({ cards }) {
   const [index, setIndex] = useState(0)
-  const x = useMotionValue(0)
-  const rotate = useTransform(x, [-200, 200], [-25, 25])
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0])
-
-  const handleDragEnd = (_, info) => {
-    if (info.offset.x > 100) setIndex((prev) => (prev - 1 + cards.length) % cards.length)
-    else if (info.offset.x < -100) setIndex((prev) => (prev + 1) % cards.length)
-    x.set(0)
-  }
 
   return (
-    <div className="relative h-48 w-full overflow-hidden">
-      <AnimatePresence initial={false}>
-        <motion.div
-          key={cards[index].id}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          style={{ x, rotate, opacity, cursor: 'grab' }}
-          onDragEnd={handleDragEnd}
-          className="absolute inset-0 cursor-grab"
-        >
-          {(() => {
-            const Icon = cards[index].icon
-            return (
-              <div className="flex h-full w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft">
+    <div className="relative w-full overflow-hidden px-4">
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: -300, right: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(_, info) => {
+          if (info.offset.x < -50 && index < cards.length - 1) setIndex(index + 1)
+          if (info.offset.x > 50 && index > 0) setIndex(index - 1)
+        }}
+        animate={{ x: `-${index * 100}%` }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="flex w-full cursor-grab active:cursor-grabbing"
+      >
+        {cards.map((card) => {
+          const Icon = card.icon
+          return (
+            <div key={card.id} className="min-w-full px-2">
+              <div className="flex h-44 w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft">
                 <div className="mb-4 flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-canvas ${cards[index].tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-canvas ${card.tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
                     <Icon size={20} />
                   </div>
-                  <p className="text-sm font-semibold text-zinc-500">{cards[index].title}</p>
+                  <p className="text-sm font-semibold text-zinc-500">{card.title}</p>
                 </div>
-                <p className="text-4xl font-extrabold tracking-tight text-ink">{cards[index].value}</p>
+                <p className="text-4xl font-extrabold tracking-tight text-ink">{card.value}</p>
               </div>
-            )
-          })()}
-        </motion.div>
-      </AnimatePresence>
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+            </div>
+          )
+        })}
+      </motion.div>
+      <div className="mt-4 flex justify-center gap-2">
         {cards.map((_, i) => (
-          <div key={i} className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-ink' : 'bg-zinc-300'}`} />
+          <div key={i} className={`h-1.5 transition-all duration-300 rounded-full ${i === index ? 'w-4 bg-ink' : 'w-1.5 bg-zinc-200'}`} />
         ))}
       </div>
     </div>
@@ -1758,10 +1753,10 @@ function OverviewScreen({
   return (
     <div className="view-enter space-y-6 pb-20">
       <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-        {/* Mobile Stacked Cards / Desktop Sidebar */}
+        {/* Mobile Stat Slider / Desktop Sidebar */}
         <div className="lg:sticky lg:top-[100px] lg:col-span-4">
           <div className="lg:hidden mb-12">
-            <SwipeableStack cards={cards} />
+            <StatSlider cards={cards} />
           </div>
           <div className="hidden lg:grid gap-4">
             {cards.map(card => (
