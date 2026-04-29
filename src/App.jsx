@@ -167,7 +167,7 @@ function App() {
       ...store.expenses.map((item) => ({ ...item, entryType: 'expense', sortDate: item.date })),
       ...store.contributions.map((item) => ({
         ...item,
-        title: item.users?.name || item.users?.email || 'Contribution',
+        title: item.users?.name || item.users?.email || 'System Contribution',
         entryType: 'contribution',
         sortDate: `${item.month}-01`,
       })),
@@ -419,6 +419,7 @@ function App() {
       password: authForm.password,
       options: {
         data: { name: authForm.name },
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
       },
     })
 
@@ -427,7 +428,7 @@ function App() {
       return
     }
 
-    setNotice('Account created. If email confirmation is enabled, verify your inbox before signing in.')
+    setNotice('Account created. Please check your email for the verification link.')
     localStorage.setItem('et_visited', 'true')
   }
 
@@ -578,6 +579,53 @@ function App() {
       await loadAppData(currentUserId)
     } finally {
       setPendingAction('')
+    }
+  }
+
+  const onDeleteTransaction = async (item) => {
+    if (!supabase || pendingAction) return
+    if (selectedType === 'group' && currentGroupRole !== 'admin') {
+      setErrorMessage('Only admins can delete transactions in a shared ledger.')
+      return
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to delete this ${item.entryType}?`)
+    if (!confirmed) return
+
+    setPendingAction(`delete-${item.id}`)
+    try {
+      const table = item.entryType === 'expense' ? 'expenses' : 'contributions'
+      const { error } = await supabase.from(table).delete().eq('id', item.id)
+      if (error) {
+        setErrorMessage(error.message)
+        return
+      }
+      setNotice(`${item.entryType === 'expense' ? 'Expense' : 'Contribution'} deleted.`)
+      await loadAppData(currentUserId)
+    } finally {
+      setPendingAction('')
+    }
+  }
+
+  const onEditTransaction = (item) => {
+    if (item.entryType === 'expense') {
+      setExpenseForm({
+        id: item.id,
+        title: item.title,
+        amount: item.amount.toString(),
+        category: item.category,
+        paid_by: item.paid_by,
+        date: item.date,
+      })
+      setOpenSheet('expense')
+    } else {
+      setContributionForm({
+        id: item.id,
+        user_id: item.user_id,
+        amount: item.amount.toString(),
+        month: item.month,
+      })
+      setOpenSheet('contribution')
     }
   }
 
@@ -1290,17 +1338,43 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
             <EmptyCard copy="No transactions yet for this month. Add a contribution or expense to start the ledger." />
           ) : (
             recentTransactions.map((item) => (
-              <div key={`${item.entryType}-${item.id}`} className="flex items-center justify-between rounded-[22px] bg-canvas px-4 py-3">
+              <div key={`${item.entryType}-${item.id}`} className="group flex items-center justify-between rounded-[22px] bg-canvas px-4 py-3">
                 <div>
-                  <p className="font-semibold text-ink">{item.entryType === 'expense' ? item.title : item.users?.name || item.users?.email}</p>
+                  <p className="font-semibold text-ink">
+                    {item.entryType === 'expense' ? item.title : (item.users?.name || item.users?.email || 'Anonymous')}
+                  </p>
                   <p className="text-xs text-zinc-500">
-                    {item.entryType === 'expense' ? `${item.category} • ${formatShortDate(item.date)}` : `${formatMonthLabel(item.month)} contribution`}
+                    {item.entryType === 'expense' 
+                      ? `${item.category} • ${formatShortDate(item.date)}` 
+                      : `${formatMonthLabel(item.month)} • Contribution by ${item.users?.name || 'Member'}`}
                   </p>
                 </div>
-                <p className={`money font-bold ${item.entryType === 'expense' ? 'text-danger' : 'text-positive'}`}>
-                  {item.entryType === 'expense' ? '-' : '+'}
-                  {formatMoney(item.amount)}
-                </p>
+                <div className="flex items-center gap-4">
+                  <p className={`money font-bold ${item.entryType === 'expense' ? 'text-danger' : 'text-positive'}`}>
+                    {item.entryType === 'expense' ? '-' : '+'}
+                    {formatMoney(item.amount)}
+                  </p>
+                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => onEditTransaction(item)}
+                      className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-ink"
+                      title="Edit"
+                    >
+                      <Plus size={14} className="rotate-45" /> {/* Using Plus as a placeholder for Edit if Pencil is missing */}
+                    </button>
+                    {(!isGroup || currentGroupRole === 'admin') && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTransaction(item)}
+                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-danger"
+                        title="Delete"
+                      >
+                        <LogOut size={14} className="rotate-90" /> {/* Using LogOut as placeholder for trash if missing */}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))
           )}
@@ -1522,13 +1596,20 @@ function ProfileScreen({
             {groups.map((group) => (
               <div key={group.id} className="rounded-[22px] bg-canvas px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold">{group.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{group.name}</p>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${group.role === 'admin' ? 'text-brand' : 'text-zinc-400'}`}>
+                        {group.role}
+                      </span>
+                    </div>
                     <p className="text-xs text-zinc-500">
                       {group.role === 'admin' ? `Invite code: ${group.invite_code}` : 'Invite members via admin'}
                     </p>
                   </div>
                   {activeGroup?.id === group.id && selectedType === 'group' ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-600">Active</span>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-zinc-600 shadow-sm">Currently Active</span>
+                    </div>
                   ) : null}
                 </div>
             ))}
@@ -1611,23 +1692,31 @@ function ProfileScreen({
 
         {selectedType === 'group' ? (
           <div className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
-            <p className="text-sm font-medium text-zinc-500">Members</p>
+            <p className="text-sm font-medium text-zinc-500">Group members</p>
             <div className="mt-4 space-y-2">
               {members.map((member) => (
                 <div key={member.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-canvas px-4 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-zinc-600">
-                      {member.name || member.email}
-                    </span>
-                    {member.role === 'admin' && <span className="text-[10px] font-bold uppercase tracking-wider text-brand">Admin</span>}
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${member.role === 'admin' ? 'bg-brand/10 text-brand' : 'bg-zinc-200 text-zinc-500'}`}>
+                      {member.name?.[0]?.toUpperCase() || 'M'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-800">
+                        {member.name || member.email}
+                        {member.id === profile?.id && <span className="ml-2 text-[10px] font-normal text-zinc-400">(You)</span>}
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                        {member.role || 'Member'}
+                      </p>
+                    </div>
                   </div>
-                  {isAdmin && member.role !== 'admin' && (
+                  {isAdmin && member.role !== 'admin' && member.id !== profile?.id && (
                     <button
                       type="button"
                       onClick={() => onPromoteMember(member.id)}
-                      className="text-xs font-bold text-brand hover:underline"
+                      className="rounded-full bg-white px-3 py-1 text-xs font-bold text-brand shadow-sm hover:bg-brand hover:text-white transition-colors"
                     >
-                      Make Admin
+                      Promote to Admin
                     </button>
                   )}
                 </div>
