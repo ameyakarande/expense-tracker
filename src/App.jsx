@@ -135,9 +135,24 @@ function App() {
   const [chatMessages, setChatMessages] = useState([])
   const [onlineUsers, setOnlineUsers] = useState([])
   const [notice, setNotice] = useState('')
-  const [activeView, setActiveView] = useState(() => localStorage.getItem('trackit_active_view') || 'overview')
-  const [selectedType, setSelectedType] = useState(() => localStorage.getItem('trackit_selected_type') || 'personal')
-  const [selectedGroupId, setSelectedGroupId] = useState(() => localStorage.getItem('trackit_selected_group_id') || '')
+  const [activeView, setActiveView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('trackit_active_view') || 'overview'
+    }
+    return 'overview'
+  })
+  const [selectedType, setSelectedType] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('trackit_selected_type') || 'personal'
+    }
+    return 'personal'
+  })
+  const [selectedGroupId, setSelectedGroupId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('trackit_selected_group_id') || ''
+    }
+    return ''
+  })
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [authMode, setAuthMode] = useState(() => {
     if (typeof window !== 'undefined') {
