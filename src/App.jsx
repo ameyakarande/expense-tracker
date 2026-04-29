@@ -59,22 +59,22 @@ function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
   ]
 
   return (
-    <nav className="glass fixed bottom-5 left-1/2 z-30 flex w-[94%] max-w-md -translate-x-1/2 items-center justify-between rounded-[24px] border border-white/60 bg-white/90 p-1.5 shadow-2xl backdrop-blur-xl sm:w-max sm:gap-2 sm:px-6">
+    <nav className="glass fixed bottom-6 left-1/2 z-30 flex w-[92%] max-w-lg -translate-x-1/2 items-center justify-between rounded-[32px] border border-white/60 bg-white/95 p-2 shadow-2xl backdrop-blur-2xl sm:w-max sm:gap-4 sm:px-8">
       {tabs.filter(t => !t.hide).map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => tab.isAction ? onAddClick() : setActiveView(tab.id)}
-          className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-[18px] py-2.5 transition-all active:scale-95 ${
+          className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-3 transition-all active:scale-90 ${
             tab.isAction 
-              ? 'mx-1 bg-ink text-white shadow-lg' 
+              ? 'bg-ink text-white shadow-lg hover:shadow-ink/20' 
               : activeView === tab.id 
                 ? 'bg-zinc-100 text-ink' 
-                : 'text-zinc-400 hover:text-ink'
+                : 'text-zinc-400 hover:bg-zinc-50 hover:text-ink'
           }`}
         >
-          <tab.icon size={tab.isAction ? 22 : 18} strokeWidth={tab.isAction ? 3 : 2} />
-          {!tab.isAction && <span className="text-[9px] font-bold uppercase tracking-tighter">{tab.label}</span>}
+          <tab.icon size={tab.isAction ? 22 : 20} strokeWidth={tab.isAction ? 3 : 2} />
+          {!tab.isAction && <span className="hidden text-[10px] font-bold uppercase tracking-widest sm:block">{tab.label}</span>}
         </button>
       ))}
     </nav>
