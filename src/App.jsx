@@ -1787,7 +1787,11 @@ function OverviewScreen({
                       <div>
                         <p className="font-bold text-ink">{tx.title}</p>
                         <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                          <span>{new Date(tx.date || tx.sortDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                          <span>
+                            {tx.entryType === 'contribution'
+                              ? new Date(tx.sortDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+                              : new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
                           {tx.category && (
                             <>
                               <span>•</span>
