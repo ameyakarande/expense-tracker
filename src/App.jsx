@@ -471,7 +471,10 @@ function App() {
             content,
             created_at,
             user_id,
-            users:user_id(name, email)
+            users (
+              name,
+              email
+            )
           `)
           .eq('group_id', selectedGroupId)
           .order('created_at', { ascending: true })
