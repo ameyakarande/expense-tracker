@@ -85,10 +85,10 @@ function App() {
   const [chatMessages, setChatMessages] = useState([])
   const [onlineUsers, setOnlineUsers] = useState([])
   const [notice, setNotice] = useState('')
-  const [activeView, setActiveView] = useState('overview')
-  const [selectedType, setSelectedType] = useState('personal')
+  const [activeView, setActiveView] = useState(() => localStorage.getItem('trackit_active_view') || 'overview')
+  const [selectedType, setSelectedType] = useState(() => localStorage.getItem('trackit_selected_type') || 'personal')
+  const [selectedGroupId, setSelectedGroupId] = useState(() => localStorage.getItem('trackit_selected_group_id') || '')
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
-  const [selectedGroupId, setSelectedGroupId] = useState('')
   const [authMode, setAuthMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('et_visited') ? 'signin' : 'signup'
@@ -409,6 +409,13 @@ function App() {
   const loadAppDataEvent = useEffectEvent(async (userId) => {
     await loadAppData(userId)
   })
+
+  // Persist preferences
+  useEffect(() => {
+    localStorage.setItem('trackit_active_view', activeView)
+    localStorage.setItem('trackit_selected_type', selectedType)
+    localStorage.setItem('trackit_selected_group_id', selectedGroupId)
+  }, [activeView, selectedType, selectedGroupId])
 
   useEffect(() => {
     if (!session?.user || !supabase) return
