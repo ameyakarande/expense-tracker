@@ -866,60 +866,62 @@ function App() {
   return (
     <div className="min-h-screen bg-transparent text-ink">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-28 pt-4 sm:px-6 lg:px-10">
-        <header className="glass sticky top-4 z-20 mb-5 rounded-[24px] border border-white/60 px-4 py-4 shadow-panel">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-zinc-500">Expense Tracker</p>
-                <h1 className="text-2xl font-extrabold tracking-tight">{store.profile?.name || 'Workspace'}</h1>
+        {(hasGreeted || activeView !== 'overview') && (
+          <header className="glass sticky top-4 z-20 mb-5 rounded-[24px] border border-white/60 px-4 py-4 shadow-panel">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-500">Expense Tracker</p>
+                  <h1 className="text-2xl font-extrabold tracking-tight">{store.profile?.name || 'Workspace'}</h1>
+                </div>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-zinc-600 shadow-soft transition hover:-translate-y-0.5 hover:text-ink"
+                  aria-label="Logout"
+                >
+                  <LogOut size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-zinc-600 shadow-soft transition hover:-translate-y-0.5 hover:text-ink"
-                aria-label="Logout"
-              >
-                <LogOut size={18} />
-              </button>
+
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex rounded-full bg-white p-1 shadow-soft">
+                  {['personal', 'group'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setSelectedType(type)}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${
+                        selectedType === type ? 'bg-ink text-white shadow-soft' : 'text-zinc-500 hover:text-ink'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  {selectedType === 'group' && (
+                    <select
+                      value={selectedGroupId}
+                      onChange={(event) => setSelectedGroupId(event.target.value)}
+                      className="rounded-2xl border border-white/50 bg-white px-4 py-3 text-sm font-medium shadow-soft outline-none"
+                    >
+                      {store.groups.length === 0 ? <option value="">No groups yet</option> : null}
+                      {store.groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name} ({group.memberCount} {group.memberCount === 1 ? 'member' : 'members'})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  <MonthPicker month={selectedMonth} setMonth={setSelectedMonth} />
+                </div>
+              </div>
             </div>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex rounded-full bg-white p-1 shadow-soft">
-                {['personal', 'group'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setSelectedType(type)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${
-                      selectedType === type ? 'bg-ink text-white shadow-soft' : 'text-zinc-500 hover:text-ink'
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                {selectedType === 'group' && (
-                  <select
-                    value={selectedGroupId}
-                    onChange={(event) => setSelectedGroupId(event.target.value)}
-                    className="rounded-2xl border border-white/50 bg-white px-4 py-3 text-sm font-medium shadow-soft outline-none"
-                  >
-                    {store.groups.length === 0 ? <option value="">No groups yet</option> : null}
-                    {store.groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.name} ({group.memberCount} {group.memberCount === 1 ? 'member' : 'members'})
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                <MonthPicker month={selectedMonth} setMonth={setSelectedMonth} />
-              </div>
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {errorMessage ? (
           <div className="mb-4 rounded-[20px] bg-red-50 px-4 py-3 text-sm font-medium text-danger shadow-soft">{errorMessage}</div>
