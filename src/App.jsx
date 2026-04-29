@@ -236,7 +236,7 @@ function App() {
 
     const groupsPromise = supabase
       .from('group_members')
-      .select('group_id, role, groups!inner(id, name, invite_code, created_by)')
+      .select('group_id, role, groups!inner(id, name, invite_code, created_by, group_members(count))')
       .eq('user_id', userId)
 
     const categoriesPromise = supabase.from('categories').select('id, name').order('name')
@@ -257,7 +257,11 @@ function App() {
       return
     }
 
-    const nextGroups = (groupsResult.data || []).map((entry) => ({ ...entry.groups, role: entry.role }))
+    const nextGroups = (groupsResult.data || []).map((item) => ({
+      ...item.groups,
+      role: item.role,
+      memberCount: item.groups?.group_members?.[0]?.count || 0,
+    }))
     const profileData = profileResult.data
     if (profileData?.currency && profileData.currency !== currency) {
       setCurrency(profileData.currency)
@@ -863,7 +867,7 @@ function App() {
                     {store.groups.length === 0 ? <option value="">No groups yet</option> : null}
                     {store.groups.map((group) => (
                       <option key={group.id} value={group.id}>
-                        {group.name}
+                        {group.name} ({group.memberCount} {group.memberCount === 1 ? 'member' : 'members'})
                       </option>
                     ))}
                   </select>
@@ -1605,6 +1609,9 @@ function ProfileScreen({
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">{group.name}</p>
+                      <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-600">
+                        {group.memberCount}
+                      </span>
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${group.role === 'admin' ? 'text-brand' : 'text-zinc-400'}`}>
                         {group.role}
                       </span>
