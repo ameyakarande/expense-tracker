@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useMemo } from 'react'
+import { useState, useEffect, useTransition, useMemo, useEffectEvent } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import {
   Check,
