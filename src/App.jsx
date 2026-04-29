@@ -51,7 +51,7 @@ const maxExportRangeDays = 366
 
 function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'overview', label: 'Home', icon: LayoutGrid },
     { id: 'budgets', label: 'Budgets', icon: CreditCard },
     { id: 'add', label: 'Add', icon: Plus, isAction: true },
     { id: 'chat', label: 'Chat', icon: MessageSquare, hide: selectedType === 'personal' },
@@ -59,22 +59,22 @@ function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
   ]
 
   return (
-    <nav className="glass fixed bottom-6 left-1/2 z-30 flex w-[90%] -translate-x-1/2 items-center justify-around rounded-[28px] border border-white/60 bg-white/80 p-2 shadow-panel backdrop-blur-lg sm:w-max sm:gap-4 sm:px-8">
+    <nav className="glass fixed bottom-5 left-1/2 z-30 flex w-[94%] max-w-md -translate-x-1/2 items-center justify-between rounded-[24px] border border-white/60 bg-white/90 p-1.5 shadow-2xl backdrop-blur-xl sm:w-max sm:gap-2 sm:px-6">
       {tabs.filter(t => !t.hide).map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => tab.isAction ? onAddClick() : setActiveView(tab.id)}
-          className={`flex flex-col items-center gap-1 rounded-2xl px-4 py-2 transition-all ${
+          className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-[18px] py-2.5 transition-all active:scale-95 ${
             tab.isAction 
-              ? 'bg-ink text-white shadow-lg scale-110 -translate-y-1' 
+              ? 'mx-1 bg-ink text-white shadow-lg' 
               : activeView === tab.id 
                 ? 'bg-zinc-100 text-ink' 
                 : 'text-zinc-400 hover:text-ink'
           }`}
         >
-          <tab.icon size={tab.isAction ? 24 : 20} strokeWidth={tab.isAction ? 3 : 2} />
-          {!tab.isAction && <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>}
+          <tab.icon size={tab.isAction ? 22 : 18} strokeWidth={tab.isAction ? 3 : 2} />
+          {!tab.isAction && <span className="text-[9px] font-bold uppercase tracking-tighter">{tab.label}</span>}
         </button>
       ))}
     </nav>
