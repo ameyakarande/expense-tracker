@@ -468,8 +468,12 @@ function App() {
         .select('*, users:user_id(name, email)')
         .eq('group_id', selectedGroupId)
         .order('created_at', { ascending: true })
-        .then(({ data }) => {
-          if (data) setChatMessages(data)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Chat fetch error:', error)
+          } else if (data) {
+            setChatMessages(data)
+          }
         })
 
       return () => {
@@ -1037,11 +1041,15 @@ function App() {
                     messages={chatMessages}
                     currentUser={session.user}
                     onSendMessage={async (content) => {
-                      await supabase.from('group_chats').insert({
+                      const { error } = await supabase.from('group_chats').insert({
                         group_id: selectedGroupId,
                         user_id: session.user.id,
                         content
                       })
+                      if (error) {
+                        setErrorMessage('Message failed to send. Please try again.')
+                        console.error('Chat send error:', error)
+                      }
                     }}
                     isAdmin={currentGroupRole === 'admin'}
                     onClearChat={async () => {
