@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata = {
-  title: 'Personal + Group Expense Tracker',
-  description: 'Mobile-first personal and shared expense tracking with Supabase.',
+  title: 'TrackIt',
+  description: 'Minimalist personal and shared expense tracking.',
 }
 
 export default function RootLayout({ children }) {

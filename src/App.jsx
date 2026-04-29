@@ -870,9 +870,12 @@ function App() {
           <header className="glass sticky top-4 z-20 mb-5 rounded-[24px] border border-white/60 px-4 py-4 shadow-panel">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-500">Expense Tracker</p>
-                  <h1 className="text-2xl font-extrabold tracking-tight">{store.profile?.name || 'Workspace'}</h1>
+                <div className="flex items-center gap-3">
+                  <Logo />
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">TrackIt</p>
+                    <h1 className="text-xl font-extrabold tracking-tight">{store.profile?.name || 'Workspace'}</h1>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -1209,6 +1212,10 @@ function WelcomeScreen({ name, onChoose, onSignOut }) {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center py-10 view-enter relative">
+      <div className="mb-12 flex flex-col items-center gap-4">
+        <Logo size={64} />
+        <h1 className="text-sm font-bold uppercase tracking-[0.3em] text-zinc-400">TrackIt</h1>
+      </div>
       {/* Top Logout Button */}
       <button 
         onClick={onSignOut}
@@ -1257,6 +1264,22 @@ function WelcomeScreen({ name, onChoose, onSignOut }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function Logo({ size = 32 }) {
+  return (
+    <div style={{ width: size, height: size }} className="flex items-center justify-center">
+      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
+        {/* Top horizontal bar */}
+        <rect x="10" y="20" width="80" height="15" rx="7.5" fill="currentColor" />
+        {/* Middle L-shaped bar */}
+        <rect x="10" y="45" width="40" height="15" rx="7.5" fill="currentColor" />
+        <rect x="35" y="45" width="15" height="30" rx="7.5" fill="currentColor" />
+        {/* Right vertical bar */}
+        <rect x="65" y="45" width="15" height="45" rx="7.5" fill="currentColor" />
+      </svg>
     </div>
   )
 }
