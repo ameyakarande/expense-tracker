@@ -942,6 +942,7 @@ function App() {
               setSelectedType(type)
               setHasGreeted(true)
             }} 
+            onSignOut={signOut}
           />
         ) : (
           <>
@@ -1201,20 +1202,29 @@ function App() {
   )
 }
 
-function WelcomeScreen({ name, onChoose }) {
+function WelcomeScreen({ name, onChoose, onSignOut }) {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center py-10 view-enter">
+    <div className="flex flex-1 flex-col items-center justify-center py-10 view-enter relative">
+      {/* Top Logout Button */}
+      <button 
+        onClick={onSignOut}
+        className="absolute top-0 right-0 flex items-center gap-2 rounded-full bg-white/50 px-4 py-2 text-sm font-bold text-zinc-500 shadow-soft transition hover:bg-white hover:text-ink"
+      >
+        <LogOut size={16} />
+        Logout
+      </button>
+
       <div className="w-full max-w-md space-y-10">
         <header className="space-y-2">
           <h2 className="text-4xl font-extrabold tracking-tight text-ink">{greeting}!</h2>
           <p className="text-xl text-zinc-400">
             {name ? `${name.split(' ')[0]}, what` : 'What'} would you like to track today?
           </p>
-          <div className="inline-block rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+          <div className="money inline-block rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             {timeStr}
           </div>
         </header>
