@@ -1472,25 +1472,46 @@ function BudgetsScreen({ totals, utilization, categoryBreakdown, formatMoney, me
 
         {settlementInfo && (
           <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
-            <div className="mb-4">
+            <div className="mb-6">
               <p className="text-sm font-medium text-zinc-500">Fair share insights</p>
-              <h3 className="text-xl font-bold">Who needs to top up?</h3>
-              <p className="mt-1 text-sm text-zinc-500">Target per person: {formatMoney(settlementInfo[0]?.sharePerPerson)}</p>
+              <h3 className="text-xl font-bold">Contribution status</h3>
+              <p className="mt-1 text-sm text-zinc-500">
+                Everyone's fair share of expenses is <span className="font-bold text-ink">{formatMoney(settlementInfo[0]?.sharePerPerson)}</span>
+              </p>
             </div>
-            <div className="space-y-3">
-              {settlementInfo.map(item => (
-                <div key={item.id} className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3">
-                  <div>
-                    <p className="text-sm font-bold">{item.name || item.email}</p>
-                    <p className="text-xs text-zinc-500">Contributed: {formatMoney(item.actualCont)}</p>
+            <div className="space-y-6">
+              {settlementInfo.map(item => {
+                const percentage = Math.min((item.actualCont / (item.sharePerPerson || 1)) * 100, 100)
+                const isSettled = item.diff >= 0
+                return (
+                  <div key={item.id} className="group">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-ink">{item.name || item.email}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">
+                          Paid {formatMoney(item.actualCont)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${isSettled ? 'text-positive' : 'text-danger'}`}>
+                          {isSettled ? 'Settled' : `Owes ${formatMoney(Math.abs(item.diff))}`}
+                        </p>
+                        {isSettled && item.diff > 0 && (
+                          <p className="text-[10px] font-bold text-positive/70 uppercase tracking-wider">
+                            +{formatMoney(item.diff)} Extra
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${isSettled ? 'bg-positive' : 'bg-danger'}`}
+                        style={{ width: `${Math.max(percentage, 5)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-bold ${item.diff < 0 ? 'text-danger' : 'text-positive'}`}>
-                      {item.diff < 0 ? `Owes ${formatMoney(Math.abs(item.diff))}` : `Ahead ${formatMoney(item.diff)}`}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}
