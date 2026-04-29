@@ -26,6 +26,7 @@ import {
   Users,
   Wallet,
   TrendingDown,
+  History as HistoryIcon,
 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import {
@@ -1789,7 +1790,7 @@ function OverviewScreen({
                 <p className="text-sm font-medium text-zinc-500">Activity</p>
                 <h3 className="text-xl font-bold">Latest transactions</h3>
               </div>
-              <History size={18} className="text-zinc-400" />
+              <HistoryIcon size={18} className="text-zinc-400" />
             </div>
             <div className="space-y-3">
               {recentTransactions.map((tx) => (
