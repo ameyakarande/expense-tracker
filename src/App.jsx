@@ -1056,6 +1056,8 @@ function App() {
                   <ChatScreen
                     messages={chatMessages}
                     currentUser={session.user}
+                    members={store.members}
+                    onlineUsers={onlineUsers}
                     onSendMessage={async (content) => {
                       const { error } = await supabase.from('group_chats').insert({
                         group_id: selectedGroupId,
@@ -1377,11 +1379,13 @@ function WelcomeScreen({ name, onChoose, onSignOut }) {
   )
 }
 
-function ChatScreen({ messages, currentUser, onSendMessage, isAdmin, onClearChat }) {
+function ChatScreen({ messages, currentUser, members, onlineUsers, onSendMessage, isAdmin, onClearChat }) {
   const [input, setInput] = useState('')
   const scrollRef = useEffectEvent((node) => {
     if (node) node.scrollTop = node.scrollHeight
   })
+
+  const onlineMembers = members.filter(m => onlineUsers.includes(m.id))
 
   const handleSend = (e) => {
     e.preventDefault()
@@ -1393,18 +1397,44 @@ function ChatScreen({ messages, currentUser, onSendMessage, isAdmin, onClearChat
   return (
     <div className="flex flex-col gap-4 view-enter h-[calc(100vh-280px)]">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-zinc-500">Discussion</p>
-          <h3 className="text-xl font-bold">Group Chat</h3>
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="text-sm font-medium text-zinc-500">Discussion</p>
+            <h3 className="text-xl font-bold">Group Chat</h3>
+          </div>
+          {onlineMembers.length > 0 && (
+            <div className="flex items-center -space-x-2 ml-2">
+              {onlineMembers.slice(0, 3).map(m => (
+                <div key={m.id} className="relative">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-zinc-100 text-[10px] font-bold text-zinc-500 shadow-sm">
+                    {m.name?.[0]?.toUpperCase() || 'M'}
+                  </div>
+                  <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500" />
+                </div>
+              ))}
+              {onlineMembers.length > 3 && (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-zinc-800 text-[8px] font-bold text-white shadow-sm">
+                  +{onlineMembers.length - 3}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        {isAdmin && (
-          <button 
-            onClick={onClearChat}
-            className="rounded-full bg-red-50 px-4 py-2 text-xs font-bold text-danger transition hover:bg-red-100"
-          >
-            Clear History
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onlineMembers.length > 0 && (
+            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-500">
+              {onlineMembers.length} Online
+            </span>
+          )}
+          {isAdmin && (
+            <button 
+              onClick={onClearChat}
+              className="rounded-full bg-red-50 px-4 py-2 text-xs font-bold text-danger transition hover:bg-red-100"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       <div 
