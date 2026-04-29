@@ -278,7 +278,7 @@ function App() {
       selectedType === 'group' && resolvedGroupId
         ? supabase
             .from('group_members')
-            .select('user_id, role, users!inner(id, name, email)')
+            .select('user_id, role, users(id, name, email)')
             .eq('group_id', resolvedGroupId)
         : Promise.resolve({ data: [] })
 
@@ -1612,9 +1612,6 @@ function ProfileScreen({
                       <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-[10px] font-bold text-zinc-600">
                         {group.memberCount}
                       </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${group.role === 'admin' ? 'text-brand' : 'text-zinc-400'}`}>
-                        {group.role}
-                      </span>
                     </div>
                     <p className="text-xs text-zinc-500">
                       {group.role === 'admin' ? `Invite code: ${group.invite_code}` : 'Invite members via admin'}
@@ -1716,7 +1713,7 @@ function ProfileScreen({
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-zinc-800">
-                        {member.name || member.email}
+                        {member.name || member.email || 'Group Member'}
                         {member.id === profile?.id && <span className="ml-2 text-[10px] font-normal text-zinc-400">(You)</span>}
                       </p>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
