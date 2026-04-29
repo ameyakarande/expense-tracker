@@ -210,6 +210,7 @@ function App() {
   }, [selectedMonth, store.trendContributions, store.trendExpenses])
 
   const activeGroup = store.groups.find((group) => group.id === selectedGroupId)
+  const currentGroupRole = activeGroup?.role || 'member'
   const utilization = totals.contributions > 0 ? Math.min((totals.expenses / totals.contributions) * 100, 100) : 0
   const largestExpense = store.expenses.reduce((largest, item) => (Number(item.amount) > Number(largest?.amount || 0) ? item : largest), null)
   const averageExpense = store.expenses.length ? totals.expenses / store.expenses.length : 0
@@ -897,6 +898,9 @@ function App() {
                     onAddExpense={() => setOpenSheet('expense')}
                     onAddContribution={() => setOpenSheet('contribution')}
                     formatMoney={formatMoney}
+                    onEditTransaction={onEditTransaction}
+                    onDeleteTransaction={onDeleteTransaction}
+                    currentGroupRole={currentGroupRole}
                   />
                 ) : null}
 
@@ -1293,7 +1297,8 @@ function FeatureCard({ icon: Icon, title, copy }) {
   )
 }
 
-function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions, onAddExpense, onAddContribution, formatMoney }) {
+function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions, onAddExpense, onAddContribution, formatMoney, onEditTransaction, onDeleteTransaction, currentGroupRole }) {
+  const isGroup = selectedType === 'group'
   return (
     <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
       <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
