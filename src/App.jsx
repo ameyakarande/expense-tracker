@@ -1191,6 +1191,7 @@ function App() {
                     onEditTransaction={onEditTransaction}
                     onDeleteTransaction={onDeleteTransaction}
                     currentGroupRole={currentGroupRole}
+                    currentUserId={currentUserId}
                   />
                 ) : activeView === 'chat' ? (
                   <ChatScreen
@@ -1820,6 +1821,7 @@ function OverviewScreen({
   onEditTransaction,
   onDeleteTransaction,
   currentGroupRole,
+  currentUserId,
 }) {
   return (
     <div className="view-enter">
@@ -1892,19 +1894,21 @@ function OverviewScreen({
                         {formatMoney(Math.abs(tx.amount))}
                       </p>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => onEditTransaction(tx)}
-                          className="h-7 w-7 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:text-brand shadow-sm"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        {(currentGroupRole === 'admin' || !tx.group_id) && (
-                          <button 
-                            onClick={() => onDeleteTransaction(tx.id)}
-                            className="h-7 w-7 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:text-danger shadow-sm"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                        {(currentUserId === (tx.paid_by || tx.user_id) || currentGroupRole === 'admin' || !tx.group_id) && (
+                          <>
+                            <button 
+                              onClick={() => onEditTransaction(tx)}
+                              className="h-7 w-7 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:text-brand shadow-sm"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button 
+                              onClick={() => onDeleteTransaction(tx.id)}
+                              className="h-7 w-7 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:text-danger shadow-sm"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
