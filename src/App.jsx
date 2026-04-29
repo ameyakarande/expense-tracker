@@ -47,13 +47,58 @@ const categoryMaxLength = 40
 const groupNameMaxLength = 48
 const inviteCodeLength = 10
 const maxExportRangeDays = 366
-const navItems = [
-  { id: 'overview', label: 'Overview', icon: Wallet },
-  { id: 'chat', label: 'Chat', icon: MessageSquare, groupOnly: true },
-  { id: 'budgets', label: 'Budgets', icon: CreditCard },
-  { id: 'insights', label: 'Insights', icon: PieChart },
-  { id: 'profile', label: 'Profile', icon: UserRound },
-]
+
+function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'budgets', label: 'Budgets', icon: CreditCard },
+    { id: 'add', label: 'Add', icon: Plus, isAction: true },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, hide: selectedType === 'personal' },
+    { id: 'profile', label: 'Profile', icon: UserRound },
+  ]
+
+  return (
+    <nav className="glass fixed bottom-6 left-1/2 z-30 flex w-[90%] -translate-x-1/2 items-center justify-around rounded-[28px] border border-white/60 bg-white/80 p-2 shadow-panel backdrop-blur-lg sm:w-max sm:gap-4 sm:px-8">
+      {tabs.filter(t => !t.hide).map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => tab.isAction ? onAddClick() : setActiveView(tab.id)}
+          className={`flex flex-col items-center gap-1 rounded-2xl px-4 py-2 transition-all ${
+            tab.isAction 
+              ? 'bg-ink text-white shadow-lg scale-110 -translate-y-1' 
+              : activeView === tab.id 
+                ? 'bg-zinc-100 text-ink' 
+                : 'text-zinc-400 hover:text-ink'
+          }`}
+        >
+          <tab.icon size={tab.isAction ? 24 : 20} strokeWidth={tab.isAction ? 3 : 2} />
+          {!tab.isAction && <span className="text-[10px] font-bold uppercase tracking-widest">{tab.label}</span>}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
+function QuickActionModal({ onClose, onSelect }) {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4" onClick={onClose}>
+      <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-lg mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => { onSelect('expense'); onClose(); }} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 text-left hover:border-ink transition-colors">
+            <ArrowUpCircle className="text-red-500 mb-2" />
+            <div className="font-medium text-sm">Add Expense</div>
+          </button>
+          <button onClick={() => { onSelect('contribution'); onClose(); }} className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100 text-left hover:border-ink transition-colors">
+            <ArrowDownCircle className="text-emerald-500 mb-2" />
+            <div className="font-medium text-sm">Add Income</div>
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
 
 const emptyExpenseForm = (date, userId) => ({
   title: '',
@@ -1104,14 +1149,6 @@ function App() {
                     contributions={store.contributions}
                     selectedType={selectedType}
                   />
-                ) : activeView === 'insights' ? (
-                  <InsightsScreen
-                    trendSeries={trendSeries}
-                    categoryBreakdown={categoryBreakdown}
-                    averageExpense={averageExpense}
-                    largestExpense={largestExpense}
-                    formatMoney={formatMoney}
-                  />
                 ) : activeView === 'profile' ? (
                   <ProfileScreen
                     profile={store.profile}
@@ -1121,6 +1158,7 @@ function App() {
                     members={store.members}
                     onlineUsers={onlineUsers}
                     contributions={store.contributions}
+                    categoryBreakdown={categoryBreakdown}
                     exportRange={exportRange}
                     setExportRange={setExportRange}
                     onExport={onExport}
@@ -1141,14 +1179,35 @@ function App() {
               activeView={activeView} 
               setActiveView={setActiveView} 
               selectedType={selectedType}
+              onAddClick={() => setOpenSheet('quick-actions')}
             />
 
-            {activeView !== 'chat' && (
-              <div className="fixed bottom-28 right-4 z-20 flex flex-col gap-3 md:hidden">
-                <FloatingButton label="Add expense" icon={Plus} onClick={() => setOpenSheet('expense')} />
-                <FloatingButton label="Add contribution" icon={CircleDollarSign} onClick={() => setOpenSheet('contribution')} tone="light" />
+            <Modal open={openSheet === 'quick-actions'} title="Quick Actions" onClose={closeSheet}>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setOpenSheet('expense')}
+                  className="flex flex-col items-center gap-3 rounded-[32px] bg-zinc-50 p-8 transition hover:bg-zinc-100"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-ink shadow-sm">
+                    <Plus size={24} />
+                  </div>
+                  <span className="text-sm font-bold">Expense</span>
+                </button>
+                {selectedType === 'group' && (
+                  <button
+                    onClick={() => setOpenSheet('contribution')}
+                    className="flex flex-col items-center gap-3 rounded-[32px] bg-emerald-50 p-8 transition hover:bg-emerald-100 text-positive"
+                  >
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                      <CircleDollarSign size={24} />
+                    </div>
+                    <span className="text-sm font-bold">Funding</span>
+                  </button>
+                )}
               </div>
-            )}
+            </Modal>
+
+            {/* No more floating buttons here */}
           </>
         )}
       </div>
@@ -2289,33 +2348,6 @@ function EmptyCard({ copy }) {
   return <div className="surface rounded-[22px] bg-canvas px-4 py-5 text-sm leading-6 text-zinc-500">{copy}</div>
 }
 
-function BottomNav({ activeView, setActiveView, selectedType }) {
-  const visibleItems = navItems.filter(item => !item.groupOnly || selectedType === 'group')
-  
-  return (
-    <nav className={`glass fixed inset-x-4 bottom-4 z-30 mx-auto grid max-w-xl rounded-[28px] border border-white/60 p-2 shadow-panel ${
-      visibleItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4'
-    }`}>
-      {visibleItems.map((item) => {
-        const Icon = item.icon
-        const active = item.id === activeView
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setActiveView(item.id)}
-            className={`surface flex flex-col items-center gap-1 rounded-[20px] px-1 py-2 text-[10px] font-bold uppercase tracking-tight transition ${
-              active ? 'bg-ink text-white' : 'text-zinc-500'
-            }`}
-          >
-            <Icon size={18} />
-            <span className="truncate w-full text-center">{item.label}</span>
-          </button>
-        )
-      })}
-    </nav>
-  )
-}
 
 function MonthPicker({ month, setMonth }) {
   return (
