@@ -462,25 +462,32 @@ function App() {
         })
         .subscribe()
 
-      // Load initial chat
-      supabase
-        .from('group_chats')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          users:user_id(name, email)
-        `)
-        .eq('group_id', selectedGroupId)
-        .order('created_at', { ascending: true })
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('Chat fetch error:', error)
-          } else if (data) {
-            setChatMessages(data)
-          }
-        })
+      // Load initial chat with a slight delay if it comes back empty (helps with session sync)
+      const fetchChat = async (retry = false) => {
+        const { data, error } = await supabase
+          .from('group_chats')
+          .select(`
+            id,
+            content,
+            created_at,
+            user_id,
+            users:user_id(name, email)
+          `)
+          .eq('group_id', selectedGroupId)
+          .order('created_at', { ascending: true })
+
+        if (error) {
+          console.error('Chat fetch error:', error)
+          setErrorMessage(`Chat Error: ${error.message}`)
+        } else if (data && data.length > 0) {
+          setChatMessages(data)
+        } else if (!retry) {
+          // If empty, wait 500ms and try once more
+          setTimeout(() => fetchChat(true), 500)
+        }
+      }
+
+      fetchChat()
 
       return () => {
         channel.unsubscribe()
