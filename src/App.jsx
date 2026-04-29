@@ -14,10 +14,12 @@ import {
   LoaderCircle,
   LogOut,
   PieChart,
+  Pencil,
   Plus,
   Receipt,
   ShieldCheck,
   Sparkles,
+  Trash2,
   UserRound,
   Users,
   Wallet,
@@ -272,7 +274,7 @@ function App() {
       selectedType === 'group' && resolvedGroupId
         ? supabase
             .from('group_members')
-            .select('user_id, users!inner(id, name, email)')
+            .select('user_id, role, users!inner(id, name, email)')
             .eq('group_id', resolvedGroupId)
         : Promise.resolve({ data: [] })
 
@@ -353,7 +355,7 @@ function App() {
     setStore({
       profile: profileResult.data,
       groups: nextGroups,
-      members: (membersResult.data || []).map((item) => ({ ...item.users, role: item.role })),
+      members: (membersResult.data || []).map((item) => ({ ...item.users, role: item.role, id: item.user_id })),
       expenses: expensesResult.data || [],
       contributions: contributionsResult.data || [],
       trendExpenses: trendExpensesResult.data || [],
@@ -1346,12 +1348,12 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
               <div key={`${item.entryType}-${item.id}`} className="group flex items-center justify-between rounded-[22px] bg-canvas px-4 py-3">
                 <div>
                   <p className="font-semibold text-ink">
-                    {item.entryType === 'expense' ? item.title : (item.users?.name || item.users?.email || 'Anonymous')}
+                    {item.entryType === 'expense' ? item.title : (item.users?.name || item.users?.email || 'Unknown Contributor')}
                   </p>
                   <p className="text-xs text-zinc-500">
                     {item.entryType === 'expense' 
-                      ? `${item.category} • ${formatShortDate(item.date)}` 
-                      : `${formatMonthLabel(item.month)} • Contribution by ${item.users?.name || 'Member'}`}
+                      ? `${item.category} • ${formatShortDate(item.date)} • Paid by ${item.paid_by_user?.name || 'Member'}` 
+                      : `${formatMonthLabel(item.month)} • Contribution from ${item.users?.name || item.users?.email || 'Member'}`}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1363,19 +1365,19 @@ function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions,
                     <button
                       type="button"
                       onClick={() => onEditTransaction(item)}
-                      className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-ink"
+                      className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-ink transition-colors"
                       title="Edit"
                     >
-                      <Plus size={14} className="rotate-45" /> {/* Using Plus as a placeholder for Edit if Pencil is missing */}
+                      <Pencil size={14} />
                     </button>
                     {(!isGroup || currentGroupRole === 'admin') && (
                       <button
                         type="button"
                         onClick={() => onDeleteTransaction(item)}
-                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-danger"
+                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-danger transition-colors"
                         title="Delete"
                       >
-                        <LogOut size={14} className="rotate-90" /> {/* Using LogOut as placeholder for trash if missing */}
+                        <Trash2 size={14} />
                       </button>
                     )}
                   </div>
