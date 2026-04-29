@@ -13,6 +13,7 @@ import {
   Download,
   LoaderCircle,
   LogOut,
+  MessageSquare,
   PieChart,
   Pencil,
   Plus,
@@ -45,6 +46,7 @@ const inviteCodeLength = 10
 const maxExportRangeDays = 366
 const navItems = [
   { id: 'overview', label: 'Overview', icon: Wallet },
+  { id: 'chat', label: 'Chat', icon: MessageSquare, groupOnly: true },
   { id: 'budgets', label: 'Budgets', icon: CreditCard },
   { id: 'insights', label: 'Insights', icon: PieChart },
   { id: 'profile', label: 'Profile', icon: UserRound },
@@ -80,6 +82,7 @@ function App() {
   const [appLoading, startTransition] = useTransition()
   const [errorMessage, setErrorMessage] = useState('')
   const [hasGreeted, setHasGreeted] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
   const [onlineUsers, setOnlineUsers] = useState([])
   const [notice, setNotice] = useState('')
   const [activeView, setActiveView] = useState('overview')
@@ -430,9 +433,43 @@ function App() {
           }
         })
 
+      // Realtime Chat Subscription
+      const chatChannel = supabase
+        .channel(`group_chat_${selectedGroupId}`)
+        .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'group_chats', 
+          filter: `group_id=eq.${selectedGroupId}` 
+        }, async (payload) => {
+          const { data: user } = await supabase.from('users').select('name, email').eq('id', payload.new.user_id).single()
+          setChatMessages((prev) => [...prev, { ...payload.new, users: user }])
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'group_chats',
+          filter: `group_id=eq.${selectedGroupId}`
+        }, () => {
+          setChatMessages([])
+        })
+        .subscribe()
+
+      // Load initial chat
+      supabase
+        .from('group_chats')
+        .select('*, users:user_id(name, email)')
+        .eq('group_id', selectedGroupId)
+        .order('created_at', { ascending: true })
+        .then(({ data }) => {
+          if (data) setChatMessages(data)
+        })
+
       return () => {
         channel.unsubscribe()
+        chatChannel.unsubscribe()
         setOnlineUsers([])
+        setChatMessages([])
       }
     }
   }, [selectedGroupId, selectedMonth, selectedType, session?.user])
@@ -988,9 +1025,25 @@ function App() {
                     onDeleteTransaction={onDeleteTransaction}
                     currentGroupRole={currentGroupRole}
                   />
-                ) : null}
-
-                {activeView === 'budgets' ? (
+                ) : activeView === 'chat' ? (
+                  <ChatScreen
+                    messages={chatMessages}
+                    currentUser={session.user}
+                    onSendMessage={async (content) => {
+                      await supabase.from('group_chats').insert({
+                        group_id: selectedGroupId,
+                        user_id: session.user.id,
+                        content
+                      })
+                    }}
+                    isAdmin={currentGroupRole === 'admin'}
+                    onClearChat={async () => {
+                      if (confirm('Clear all chat history for this group?')) {
+                        await supabase.from('group_chats').delete().eq('group_id', selectedGroupId)
+                      }
+                    }}
+                  />
+                ) : activeView === 'budgets' ? (
                   <BudgetsScreen
                     totals={totals}
                     utilization={utilization}
@@ -1000,9 +1053,7 @@ function App() {
                     contributions={store.contributions}
                     selectedType={selectedType}
                   />
-                ) : null}
-
-                {activeView === 'insights' ? (
+                ) : activeView === 'insights' ? (
                   <InsightsScreen
                     trendSeries={trendSeries}
                     categoryBreakdown={categoryBreakdown}
@@ -1010,9 +1061,7 @@ function App() {
                     largestExpense={largestExpense}
                     formatMoney={formatMoney}
                   />
-                ) : null}
-
-                {activeView === 'profile' ? (
+                ) : activeView === 'profile' ? (
                   <ProfileScreen
                     profile={store.profile}
                     selectedType={selectedType}
@@ -1037,7 +1086,11 @@ function App() {
               </div>
             </main>
 
-            <BottomNav activeView={activeView} setActiveView={setActiveView} />
+            <BottomNav 
+              activeView={activeView} 
+              setActiveView={setActiveView} 
+              selectedType={selectedType}
+            />
 
             <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-3 md:hidden">
               <FloatingButton label="Add expense" icon={Plus} onClick={() => setOpenSheet('expense')} />
@@ -1289,6 +1342,90 @@ function WelcomeScreen({ name, onChoose, onSignOut }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ChatScreen({ messages, currentUser, onSendMessage, isAdmin, onClearChat }) {
+  const [input, setInput] = useState('')
+  const scrollRef = useEffectEvent((node) => {
+    if (node) node.scrollTop = node.scrollHeight
+  })
+
+  const handleSend = (e) => {
+    e.preventDefault()
+    if (!input.trim()) return
+    onSendMessage(input)
+    setInput('')
+  }
+
+  return (
+    <div className="flex flex-col gap-4 view-enter h-[calc(100vh-280px)]">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-zinc-500">Discussion</p>
+          <h3 className="text-xl font-bold">Group Chat</h3>
+        </div>
+        {isAdmin && (
+          <button 
+            onClick={onClearChat}
+            className="rounded-full bg-red-50 px-4 py-2 text-xs font-bold text-danger transition hover:bg-red-100"
+          >
+            Clear History
+          </button>
+        )}
+      </div>
+
+      <div 
+        ref={scrollRef}
+        className="flex-1 space-y-4 overflow-y-auto rounded-[32px] bg-white p-6 shadow-panel"
+      >
+        {messages.length === 0 && (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-zinc-50 text-zinc-300">
+              <MessageSquare size={32} />
+            </div>
+            <p className="max-w-[200px] text-sm font-medium text-zinc-400">
+              No messages yet. Start a conversation with your group!
+            </p>
+          </div>
+        )}
+        {messages.map((msg, idx) => {
+          const isMe = msg.user_id === currentUser.id
+          const prevMsg = messages[idx - 1]
+          const showHeader = !prevMsg || prevMsg.user_id !== msg.user_id
+
+          return (
+            <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+              {showHeader && (
+                <span className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  {isMe ? 'You' : msg.users?.name || msg.users?.email}
+                </span>
+              )}
+              <div className={`max-w-[80%] rounded-[20px] px-4 py-2.5 text-sm font-medium ${
+                isMe ? 'bg-ink text-white rounded-tr-none shadow-panel' : 'bg-zinc-100 text-zinc-800 rounded-tl-none'
+              }`}>
+                {msg.content}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <form onSubmit={handleSend} className="flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+          className="flex-1 rounded-2xl bg-white px-5 py-4 text-sm font-medium shadow-soft outline-none ring-zinc-100 focus:ring-2"
+        />
+        <button 
+          type="submit"
+          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-ink text-white shadow-panel transition hover:-translate-y-0.5 active:scale-95"
+        >
+          <Plus size={24} />
+        </button>
+      </form>
     </div>
   )
 }
@@ -2066,10 +2203,14 @@ function EmptyCard({ copy }) {
   return <div className="surface rounded-[22px] bg-canvas px-4 py-5 text-sm leading-6 text-zinc-500">{copy}</div>
 }
 
-function BottomNav({ activeView, setActiveView }) {
+function BottomNav({ activeView, setActiveView, selectedType }) {
+  const visibleItems = navItems.filter(item => !item.groupOnly || selectedType === 'group')
+  
   return (
-    <nav className="glass fixed inset-x-4 bottom-4 z-30 mx-auto grid max-w-xl grid-cols-4 rounded-[28px] border border-white/60 p-2 shadow-panel">
-      {navItems.map((item) => {
+    <nav className={`glass fixed inset-x-4 bottom-4 z-30 mx-auto grid max-w-xl rounded-[28px] border border-white/60 p-2 shadow-panel ${
+      visibleItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4'
+    }`}>
+      {visibleItems.map((item) => {
         const Icon = item.icon
         const active = item.id === activeView
         return (
@@ -2077,12 +2218,12 @@ function BottomNav({ activeView, setActiveView }) {
             key={item.id}
             type="button"
             onClick={() => setActiveView(item.id)}
-            className={`surface flex flex-col items-center gap-1 rounded-[20px] px-3 py-2 text-xs font-semibold transition ${
+            className={`surface flex flex-col items-center gap-1 rounded-[20px] px-1 py-2 text-[10px] font-bold uppercase tracking-tight transition ${
               active ? 'bg-ink text-white' : 'text-zinc-500'
             }`}
           >
             <Icon size={18} />
-            {item.label}
+            <span className="truncate w-full text-center">{item.label}</span>
           </button>
         )
       })}
