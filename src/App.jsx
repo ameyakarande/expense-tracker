@@ -49,7 +49,7 @@ const groupNameMaxLength = 48
 const inviteCodeLength = 10
 const maxExportRangeDays = 366
 
-function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
+function BottomNav({ activeView, setActiveView, selectedType, onAddClick, hasUnreadChat }) {
   const tabs = [
     { id: 'overview', label: 'Home', icon: LayoutGrid },
     { id: 'budgets', label: 'Budgets', icon: CreditCard },
@@ -65,7 +65,7 @@ function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
           key={tab.id}
           type="button"
           onClick={() => tab.isAction ? onAddClick() : setActiveView(tab.id)}
-          className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-3 transition-all active:scale-90 ${
+          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-3 transition-all active:scale-90 ${
             tab.isAction 
               ? 'bg-ink text-white shadow-lg hover:shadow-ink/20' 
               : activeView === tab.id 
@@ -74,6 +74,9 @@ function BottomNav({ activeView, setActiveView, selectedType, onAddClick }) {
           }`}
         >
           <tab.icon size={tab.isAction ? 22 : 20} strokeWidth={tab.isAction ? 3 : 2} />
+          {tab.id === 'chat' && hasUnreadChat && (
+            <span className="absolute top-2 right-3 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+          )}
           {!tab.isAction && <span className="hidden text-[10px] font-bold uppercase tracking-widest sm:block">{tab.label}</span>}
         </button>
       ))}
@@ -133,6 +136,7 @@ function App() {
   const [hasGreeted, setHasGreeted] = useState(false)
   const [chatMessages, setChatMessages] = useState([])
   const [onlineUsers, setOnlineUsers] = useState([])
+  const [hasUnreadChat, setHasUnreadChat] = useState(false)
   const [notice, setNotice] = useState('')
   const [activeView, setActiveView] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -474,6 +478,13 @@ function App() {
     await loadAppData(userId)
   })
 
+  // Clear unread badge when user opens chat
+  useEffect(() => {
+    if (activeView === 'chat') {
+      setHasUnreadChat(false)
+    }
+  }, [activeView])
+
   // Persist preferences
   useEffect(() => {
     localStorage.setItem('trackit_active_view', activeView)
@@ -515,6 +526,10 @@ function App() {
         }, async (payload) => {
           const { data: user } = await supabase.from('users').select('name, email').eq('id', payload.new.user_id).single()
           setChatMessages((prev) => [...prev, { ...payload.new, users: user }])
+          // Mark unread if the message is from someone else
+          if (payload.new.user_id !== session.user.id) {
+            setHasUnreadChat(true)
+          }
         })
         .on('postgres_changes', {
           event: 'DELETE',
@@ -1179,6 +1194,7 @@ function App() {
               setActiveView={setActiveView} 
               selectedType={selectedType}
               onAddClick={() => setOpenSheet('quick-actions')}
+              hasUnreadChat={hasUnreadChat}
             />
 
             <Modal open={openSheet === 'quick-actions'} title="Quick Actions" onClose={closeSheet}>
