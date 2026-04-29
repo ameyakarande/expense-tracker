@@ -244,7 +244,7 @@ function App() {
 
   const recentTransactions = useMemo(() => {
     const items = [
-      ...store.expenses.map((item) => ({ ...item, entryType: 'expense', sortDate: item.date })),
+      ...store.expenses.map((item) => ({ ...item, entryType: 'expense', sortDate: item.date, users: item.paid_by_user })),
       ...store.contributions.map((item) => ({
         ...item,
         title: item.users?.name || item.users?.email || 'System Contribution',
