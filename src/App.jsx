@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useEffectEvent, useMemo, useState, useTransition } from 'react'
+import { useState, useEffect, useTransition, useMemo } from 'react'
+import { motion, AnimatePresence, useMotionValue, useTransform, pan } from 'framer-motion'
 import {
   Check,
   ArrowDownCircle,
@@ -24,6 +25,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  TrendingDown,
 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import {
@@ -75,6 +77,49 @@ const parsePositiveAmount = (value) => {
 const isValidDateString = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value)
 const isValidMonthString = (value) => /^\d{4}-\d{2}$/.test(value)
 const getDaySpan = (start, end) => Math.ceil((new Date(`${end}T00:00:00`) - new Date(`${start}T00:00:00`)) / 86400000)
+
+function SwipeableStack({ cards }) {
+  const [index, setIndex] = useState(0)
+  const x = useMotionValue(0)
+  const rotate = useTransform(x, [-200, 200], [-25, 25])
+  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0])
+
+  const handleDragEnd = (_, info) => {
+    if (info.offset.x > 100) setIndex((prev) => (prev - 1 + cards.length) % cards.length)
+    else if (info.offset.x < -100) setIndex((prev) => (prev + 1) % cards.length)
+    x.set(0)
+  }
+
+  return (
+    <div className="relative h-48 w-full overflow-hidden">
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={cards[index].id}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          style={{ x, rotate, opacity, cursor: 'grab' }}
+          onDragEnd={handleDragEnd}
+          className="absolute inset-0 cursor-grab"
+        >
+          <div className="flex h-full w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft">
+            <div className="mb-4 flex items-center gap-3">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-canvas ${cards[index].tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
+                <cards[index].icon size={20} />
+              </div>
+              <p className="text-sm font-semibold text-zinc-500">{cards[index].title}</p>
+            </div>
+            <p className="text-4xl font-extrabold tracking-tight text-ink">{cards[index].value}</p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+        {cards.map((_, i) => (
+          <div key={i} className={`h-1.5 w-1.5 rounded-full ${i === index ? 'bg-ink' : 'bg-zinc-300'}`} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function App() {
   const [session, setSession] = useState(null)
@@ -1653,106 +1698,131 @@ function AuthScreen({ authForm, authMode, setAuthForm, setAuthMode, onSubmit, er
   )
 }
 
-function FeatureCard({ icon: Icon, title, copy }) {
+function OverviewScreen({
+  selectedType,
+  activeGroup,
+  totals,
+  recentTransactions,
+  onAddExpense,
+  onAddContribution,
+  formatMoney,
+  onEditTransaction,
+  onDeleteTransaction,
+  currentGroupRole,
+}) {
+  const cards = [
+    {
+      id: 'balance',
+      title: 'Current Balance',
+      value: formatMoney(totals.balance),
+      icon: Wallet,
+      tone: totals.balance < 0 ? 'danger' : 'positive'
+    },
+    {
+      id: 'income',
+      title: 'Total Contributions',
+      value: formatMoney(totals.income),
+      icon: CircleDollarSign,
+      tone: 'positive'
+    },
+    {
+      id: 'expenses',
+      title: 'Total Expenses',
+      value: formatMoney(totals.expenses),
+      icon: TrendingDown,
+      tone: 'danger'
+    }
+  ]
+
   return (
-    <div className="rounded-[24px] bg-white/10 p-4">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
-        <Icon size={18} />
-      </div>
-      <h3 className="font-semibold">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-white/70">{copy}</p>
-    </div>
-  )
-}
-
-function OverviewScreen({ selectedType, activeGroup, totals, recentTransactions, onAddExpense, onAddContribution, formatMoney, onEditTransaction, onDeleteTransaction, currentGroupRole }) {
-  const isGroup = selectedType === 'group'
-  return (
-    <div className="grid items-start gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <section className="surface lg:sticky lg:top-[180px] rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-zinc-500">{selectedType === 'personal' ? 'Personal ledger' : activeGroup?.name || 'Group ledger'}</p>
-            <h2 className="money mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">{formatMoney(totals.balance)}</h2>
-            <p className="mt-3 text-sm text-zinc-500">
-              {totals.previousBalance !== 0 
-                ? `Including ${formatMoney(totals.previousBalance)} carried forward from previous months.`
-                : 'Remaining balance for the selected month.'}
-            </p>
+    <div className="view-enter space-y-6 pb-20">
+      <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+        {/* Mobile Stacked Cards / Desktop Sidebar */}
+        <div className="lg:sticky lg:top-[100px] lg:col-span-4">
+          <div className="md:hidden mb-12">
+            <SwipeableStack cards={cards} />
           </div>
-          <div className="rounded-[24px] bg-sky px-4 py-3 text-right text-brand">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em]">Live</p>
-            <p className="mt-1 text-sm font-bold">Month ledger</p>
+          <div className="hidden md:grid gap-4">
+            {cards.map(card => (
+              <StatCard 
+                key={card.id}
+                label={card.title}
+                value={card.value}
+                icon={card.icon}
+                tone={card.tone}
+              />
+            ))}
+          </div>
+          <div className="mt-6 flex flex-col gap-3">
+            <ActionButton icon={Plus} label="Add expense" onClick={onAddExpense} />
+            {selectedType === 'group' && (
+              <ActionButton icon={CircleDollarSign} label="Add contribution" onClick={onAddContribution} tone="light" />
+            )}
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <StatCard label="Contributions" value={formatMoney(totals.contributions)} tone="positive" icon={ArrowDownCircle} />
-          <StatCard label="Expenses" value={formatMoney(totals.expenses)} tone="danger" icon={ArrowUpCircle} />
-          <StatCard label="Balance" value={formatMoney(totals.balance)} tone={totals.balance >= 0 ? 'positive' : 'danger'} icon={Wallet} />
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-3 md:flex">
-          <ActionButton icon={Plus} label="Add Expense" onClick={onAddExpense} />
-          <ActionButton icon={CircleDollarSign} label="Add Contribution" onClick={onAddContribution} tone="light" />
-        </div>
-      </section>
-
-      <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-zinc-500">Recent transactions</p>
-            <h3 className="text-xl font-bold">Latest activity</h3>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {recentTransactions.length === 0 ? (
-            <EmptyCard copy="No transactions yet for this month. Add a contribution or expense to start the ledger." />
-          ) : (
-            recentTransactions.map((item) => (
-              <div key={`${item.entryType}-${item.id}`} className="group flex items-center justify-between rounded-[22px] bg-canvas px-5 py-5 transition-all hover:bg-zinc-50">
-                <div className="flex flex-col gap-1">
-                  <p className="font-semibold text-ink">
-                    {item.entryType === 'expense' ? item.title : (item.users?.name || item.users?.email || 'Unknown Contributor')}
-                  </p>
-                  <p className="text-xs text-zinc-500">
-                    {item.entryType === 'expense' 
-                      ? `${item.category} • ${formatShortDate(item.date)} • Paid by ${item.paid_by_user?.name || 'Member'}` 
-                      : `${formatMonthLabel(item.month)} • Contribution from ${item.users?.name || item.users?.email || 'Member'}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <p className={`money font-bold ${item.entryType === 'expense' ? 'text-danger' : 'text-positive'}`}>
-                    {item.entryType === 'expense' ? '-' : '+'}
-                    {formatMoney(item.amount)}
-                  </p>
-                  <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => onEditTransaction(item)}
-                      className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-ink transition-colors"
-                      title="Edit"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    {(!isGroup || currentGroupRole === 'admin') && (
-                      <button
-                        type="button"
-                        onClick={() => onDeleteTransaction(item)}
-                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-danger transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+        {/* Transactions List */}
+        <div className="lg:col-span-8">
+          <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-500">Activity</p>
+                <h3 className="text-xl font-bold">Latest transactions</h3>
+              </div>
+              <History size={18} className="text-zinc-400" />
+            </div>
+            <div className="space-y-3">
+              {recentTransactions.map((tx) => (
+                <div key={tx.id} className="group relative rounded-[22px] bg-canvas p-4 transition hover:bg-white hover:shadow-soft">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tx.amount < 0 ? 'bg-red-50 text-danger' : 'bg-emerald-50 text-positive'}`}>
+                        {tx.amount < 0 ? <TrendingDown size={18} /> : <ArrowDownCircle size={18} />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-ink">{tx.title}</p>
+                        <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                          <span>{new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                          <span>•</span>
+                          <span>{tx.category}</span>
+                          {tx.users && (
+                            <>
+                              <span>•</span>
+                              <span className="text-brand">By {tx.users.name || tx.users.email}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <p className={`money text-sm font-bold ${tx.amount < 0 ? 'text-danger' : 'text-positive'}`}>
+                        {formatMoney(Math.abs(tx.amount))}
+                      </p>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => onEditTransaction(tx)}
+                          className="h-7 w-7 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:text-brand shadow-sm"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        {(currentGroupRole === 'admin' || !tx.group_id) && (
+                          <button 
+                            onClick={() => onDeleteTransaction(tx.id)}
+                            className="h-7 w-7 flex items-center justify-center rounded-lg bg-white text-zinc-400 hover:text-danger shadow-sm"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))}
+              {recentTransactions.length === 0 && <EmptyCard copy="No transactions found for this period." />}
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   )
 }
