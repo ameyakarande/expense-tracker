@@ -351,7 +351,7 @@ function App() {
       selectedType === 'group' && resolvedGroupId
         ? supabase
             .from('group_members')
-            .select('user_id, role')
+            .select('user_id, role, last_chat_read_at')
             .eq('group_id', resolvedGroupId)
         : Promise.resolve({ data: [] })
 
@@ -461,6 +461,28 @@ function App() {
       previousBalance,
     })
 
+    // Check for unread chat messages (persistent across sessions)
+    if (selectedType === 'group' && resolvedGroupId) {
+      const myMembership = (membersResult.data || []).find(m => m.user_id === userId)
+      const lastRead = myMembership?.last_chat_read_at
+
+      const { data: latestMsg } = await supabase
+        .from('group_chats')
+        .select('created_at, user_id')
+        .eq('group_id', resolvedGroupId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (latestMsg && latestMsg.user_id !== userId && (!lastRead || new Date(latestMsg.created_at) > new Date(lastRead))) {
+        setHasUnreadChat(true)
+      } else {
+        setHasUnreadChat(false)
+      }
+    } else {
+      setHasUnreadChat(false)
+    }
+
     setExpenseForm((current) => ({
       ...current,
       paid_by: selectedType === 'group' ? resolvedGroupId && current.paid_by ? current.paid_by : userId : userId,
@@ -478,12 +500,21 @@ function App() {
     await loadAppData(userId)
   })
 
-  // Clear unread badge when user opens chat
+  // Clear unread badge when user opens chat and persist to DB
   useEffect(() => {
-    if (activeView === 'chat') {
+    if (activeView === 'chat' && selectedGroupId && supabase && currentUserId) {
       setHasUnreadChat(false)
+      // Update last_chat_read_at in the database so it persists across sessions
+      supabase
+        .from('group_members')
+        .update({ last_chat_read_at: new Date().toISOString() })
+        .eq('group_id', selectedGroupId)
+        .eq('user_id', currentUserId)
+        .then(({ error }) => {
+          if (error) console.error('Failed to update read timestamp:', error)
+        })
     }
-  }, [activeView])
+  }, [activeView, selectedGroupId, currentUserId])
 
   // Persist preferences
   useEffect(() => {
