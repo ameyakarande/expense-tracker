@@ -101,15 +101,20 @@ function SwipeableStack({ cards }) {
           onDragEnd={handleDragEnd}
           className="absolute inset-0 cursor-grab"
         >
-          <div className="flex h-full w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft">
-            <div className="mb-4 flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-canvas ${cards[index].tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
-                <cards[index].icon size={20} />
+          {(() => {
+            const Icon = cards[index].icon
+            return (
+              <div className="flex h-full w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-canvas ${cards[index].tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
+                    <Icon size={20} />
+                  </div>
+                  <p className="text-sm font-semibold text-zinc-500">{cards[index].title}</p>
+                </div>
+                <p className="text-4xl font-extrabold tracking-tight text-ink">{cards[index].value}</p>
               </div>
-              <p className="text-sm font-semibold text-zinc-500">{cards[index].title}</p>
-            </div>
-            <p className="text-4xl font-extrabold tracking-tight text-ink">{cards[index].value}</p>
-          </div>
+            )
+          })()}
         </motion.div>
       </AnimatePresence>
       <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
