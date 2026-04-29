@@ -487,6 +487,7 @@ function App() {
       const derivedMonth = expenseForm.date.slice(0, 7)
       await saveCategory(category)
       const payload = {
+        id: expenseForm.id,
         title,
         amount,
         category,
@@ -496,7 +497,7 @@ function App() {
         type: selectedType,
         group_id: selectedType === 'group' ? selectedGroupId : null,
       }
-      const { error } = await supabase.from('expenses').insert(payload)
+      const { error } = await supabase.from('expenses').upsert(payload)
       if (error) {
         setErrorMessage(error.message)
         return
@@ -528,13 +529,14 @@ function App() {
     setPendingAction('contribution')
     try {
       const payload = {
+        id: contributionForm.id,
         user_id: selectedType === 'personal' ? currentUserId : contributionForm.user_id,
         amount,
         month: contributionForm.month,
         type: selectedType,
         group_id: selectedType === 'group' ? selectedGroupId : null,
       }
-      const { error } = await supabase.from('contributions').insert(payload)
+      const { error } = await supabase.from('contributions').upsert(payload)
       if (error) {
         setErrorMessage(error.message)
         return
