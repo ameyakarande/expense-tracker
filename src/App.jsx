@@ -278,9 +278,11 @@ function App() {
       selectedType === 'group' && resolvedGroupId
         ? supabase
             .from('group_members')
-            .select('user_id, role, users(id, name, email)')
+            .select('user_id, role')
             .eq('group_id', resolvedGroupId)
         : Promise.resolve({ data: [] })
+
+    const allUsersPromise = supabase.from('users').select('id, name, email')
 
     const expensesQuery = supabase
       .from('expenses')
@@ -338,8 +340,16 @@ function App() {
       prevContributionsQuery.eq('group_id', resolvedGroupId)
     }
 
-    const [membersResult, expensesResult, contributionsResult, trendExpensesResult, trendContributionsResult, prevExpensesResult, prevContributionsResult] =
-      await Promise.all([membersPromise, expensesQuery, contributionsQuery, trendExpensesQuery, trendContributionsQuery, prevExpensesQuery, prevContributionsQuery])
+    const [membersResult, expensesResult, contributionsResult, trendExpensesResult, trendContributionsResult, prevExpensesResult, prevContributionsResult, allUsersResult] = await Promise.all([
+      membersPromise, 
+      expensesQuery, 
+      contributionsQuery, 
+      trendExpensesQuery, 
+      trendContributionsQuery, 
+      prevExpensesQuery, 
+      prevContributionsQuery,
+      allUsersPromise
+    ])
 
     if (expensesResult.error || contributionsResult.error || trendExpensesResult.error || trendContributionsResult.error || prevExpensesResult.error || prevContributionsResult.error) {
       setErrorMessage(
@@ -356,10 +366,20 @@ function App() {
 
     const previousBalance = sumBy(prevContributionsResult.data || [], 'amount') - sumBy(prevExpensesResult.data || [], 'amount')
 
+    const usersMap = (allUsersResult.data || []).reduce((map, u) => {
+      map[u.id] = u
+      return map
+    }, {})
+
     setStore({
       profile: profileResult.data,
       groups: nextGroups,
-      members: (membersResult.data || []).map((item) => ({ ...item.users, role: item.role, id: item.user_id })),
+      members: (membersResult.data || []).map((m) => ({
+        id: m.user_id,
+        role: m.role,
+        name: usersMap[m.user_id]?.name,
+        email: usersMap[m.user_id]?.email,
+      })),
       expenses: expensesResult.data || [],
       contributions: contributionsResult.data || [],
       trendExpenses: trendExpensesResult.data || [],
