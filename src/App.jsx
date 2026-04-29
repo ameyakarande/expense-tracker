@@ -79,51 +79,6 @@ const isValidDateString = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value)
 const isValidMonthString = (value) => /^\d{4}-\d{2}$/.test(value)
 const getDaySpan = (start, end) => Math.ceil((new Date(`${end}T00:00:00`) - new Date(`${start}T00:00:00`)) / 86400000)
 
-function StatSlider({ cards }) {
-  const [index, setIndex] = useState(0)
-
-  return (
-    <div className="relative w-full overflow-hidden">
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: -(cards.length - 1) * 100, right: 0 }}
-        dragElastic={0.2}
-        onDragEnd={(_, info) => {
-          if (info.offset.x < -30 && index < cards.length - 1) setIndex(index + 1)
-          if (info.offset.x > 30 && index > 0) setIndex(index - 1)
-        }}
-        animate={{ x: `-${index * 100}%` }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="flex w-full cursor-grab active:cursor-grabbing"
-      >
-        {cards.map((card) => {
-          const Icon = card.icon
-          return (
-            <div key={card.id} className="min-w-full px-4">
-              <div className="flex h-40 w-full flex-col justify-center rounded-[32px] bg-white p-6 shadow-soft border border-zinc-50">
-                <div className="mb-3 flex items-center gap-3">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-canvas ${card.tone === 'danger' ? 'text-danger' : 'text-positive'}`}>
-                    <Icon size={18} />
-                  </div>
-                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{card.title}</p>
-                </div>
-                <p className="text-3xl font-extrabold tracking-tight text-ink truncate">
-                  {card.value}
-                </p>
-              </div>
-            </div>
-          )
-        })}
-      </motion.div>
-      <div className="mt-4 flex justify-center gap-2">
-        {cards.map((_, i) => (
-          <div key={i} className={`h-1.5 transition-all duration-300 rounded-full ${i === index ? 'w-4 bg-ink' : 'w-1.5 bg-zinc-200'}`} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function App() {
   const [session, setSession] = useState(null)
   const [loadingSession, setLoadingSession] = useState(isSupabaseConfigured)
@@ -1016,7 +971,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-transparent text-ink">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-3 pb-32 pt-4 sm:px-6 lg:px-10">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-28 pt-4 sm:px-6 lg:px-10">
         {(hasGreeted || activeView !== 'overview') && (
           <header className="glass sticky top-4 z-20 mb-5 rounded-[24px] border border-white/60 px-4 py-4 shadow-panel">
             <div className="flex flex-col gap-4">
@@ -1189,7 +1144,8 @@ function App() {
             />
 
             <div className="fixed bottom-24 right-4 z-20 flex flex-col gap-3 md:hidden">
-              <FloatingButton label="+" icon={Plus} onClick={() => setOpenSheet('expense')} />
+              <FloatingButton label="Add expense" icon={Plus} onClick={() => setOpenSheet('expense')} />
+              <FloatingButton label="Add contribution" icon={CircleDollarSign} onClick={() => setOpenSheet('contribution')} tone="light" />
             </div>
           </>
         )}
@@ -1727,48 +1683,29 @@ function OverviewScreen({
   onDeleteTransaction,
   currentGroupRole,
 }) {
-  const cards = [
-    {
-      id: 'balance',
-      title: 'Current Balance',
-      value: formatMoney(totals.balance),
-      icon: Wallet,
-      tone: totals.balance < 0 ? 'danger' : 'positive'
-    },
-    {
-      id: 'income',
-      title: 'Total Contributions',
-      value: formatMoney(totals.income),
-      icon: CircleDollarSign,
-      tone: 'positive'
-    },
-    {
-      id: 'expenses',
-      title: 'Total Expenses',
-      value: formatMoney(totals.expenses),
-      icon: TrendingDown,
-      tone: 'danger'
-    }
-  ]
-
   return (
-    <div className="view-enter space-y-6 pb-20">
+    <div className="view-enter">
       <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
-        {/* Mobile Stat Slider / Desktop Sidebar */}
         <div className="lg:sticky lg:top-[100px] lg:col-span-4">
-          <div className="lg:hidden mb-12">
-            <StatSlider cards={cards} />
-          </div>
-          <div className="hidden lg:grid gap-4">
-            {cards.map(card => (
-              <StatCard 
-                key={card.id}
-                label={card.title}
-                value={card.value}
-                icon={card.icon}
-                tone={card.tone}
-              />
-            ))}
+          <div className="grid gap-4">
+            <StatCard
+              label="Current Balance"
+              value={formatMoney(totals.balance)}
+              icon={Wallet}
+              tone={totals.balance < 0 ? 'danger' : 'positive'}
+            />
+            <StatCard
+              label="Total Contributions"
+              value={formatMoney(totals.income)}
+              icon={CircleDollarSign}
+              tone="positive"
+            />
+            <StatCard
+              label="Total Expenses"
+              value={formatMoney(totals.expenses)}
+              icon={TrendingDown}
+              tone="danger"
+            />
           </div>
           <div className="mt-6 flex flex-col gap-3">
             <ActionButton icon={Plus} label="Add expense" onClick={onAddExpense} />
@@ -1778,7 +1715,6 @@ function OverviewScreen({
           </div>
         </div>
 
-        {/* Transactions List */}
         <div className="lg:col-span-8">
           <section className="surface rounded-[28px] bg-white p-5 shadow-panel sm:p-6">
             <div className="mb-5 flex items-center justify-between">
