@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition, useMemo } from 'react'
-import { motion, AnimatePresence, useMotionValue, useTransform, pan } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import {
   Check,
   ArrowDownCircle,
@@ -1739,10 +1739,10 @@ function OverviewScreen({
       <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
         {/* Mobile Stacked Cards / Desktop Sidebar */}
         <div className="lg:sticky lg:top-[100px] lg:col-span-4">
-          <div className="md:hidden mb-12">
+          <div className="lg:hidden mb-12">
             <SwipeableStack cards={cards} />
           </div>
-          <div className="hidden md:grid gap-4">
+          <div className="hidden lg:grid gap-4">
             {cards.map(card => (
               <StatCard 
                 key={card.id}
