@@ -801,22 +801,12 @@ function App() {
 
     setPendingAction('join')
     try {
-      const { data, error } = await supabase.from('groups').select('id').eq('invite_code', lookupCode).single()
+      const { data, error } = await supabase.rpc('join_group_by_code', { lookup_code: lookupCode })
       if (error) {
         setErrorMessage("Invalid invite code. Please check and try again.")
         return
       }
-      
-      const { error: joinError } = await supabase.from('group_members').upsert({ 
-        group_id: data.id, 
-        user_id: currentUserId,
-        role: 'member'
-      })
-      
-      if (joinError) {
-        setErrorMessage(joinError.message)
-        return
-      }
+
 
       // Proactively ensure public profile exists after joining
       await supabase.from('users').upsert({
@@ -826,7 +816,7 @@ function App() {
       }, { onConflict: 'id' })
 
       setSelectedType('group')
-      setSelectedGroupId(data.id)
+      setSelectedGroupId(data)
       closeSheet()
       await loadAppData(currentUserId)
     } finally {
